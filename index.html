@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>صباح المالك - FranchiseOS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #f4f6f9;
+      color: #1a1a2e;
+      padding: 16px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .greeting { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .date { color: #888; font-size: 14px; margin-bottom: 16px; }
+    .store-select {
+      width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #4f7df2;
+      font-size: 16px; font-weight: 600; margin-bottom: 16px; background: #fff; color: #1a1a2e;
+    }
+    .section-title {
+      font-size: 18px; font-weight: 700; margin: 24px 0 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .note { color: #888; font-size: 12px; margin: -4px 0 10px; line-height: 1.6; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .card {
+      background: #fff; border-radius: 14px; padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .card.wide { grid-column: 1 / -1; }
+    .card .label { font-size: 13px; color: #888; margin-bottom: 6px; }
+    .card .value { font-size: 22px; font-weight: 700; }
+    .card .value.full { font-size: 16px; }
+    .rec {
+      background: #fff; border-radius: 14px; padding: 14px 16px;
+      margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      border-right: 4px solid #4f7df2;
+    }
+    .rec .icon { font-size: 24px; }
+    .rec .text { font-size: 15px; line-height: 1.5; }
+    .rec .text strong { display: block; margin-bottom: 2px; }
+    .loading { text-align: center; padding: 40px; color: #888; }
+    .error { color: #c0392b; white-space: pre-wrap; font-size: 13px;
+             background: #fdf0ef; padding: 12px; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <div class="greeting">صباح الخير 👋</div>
+  <div class="date" id="dateLabel"></div>
+
+  <select class="store-select" id="storeSelect">
+    <option value="all">🏪 كل المحلات</option>
+    <option value="1">🏠 مطبخ البيت (الكويت)</option>
+    <option value="2">☁️ كلاود كيتشن (الكويت)</option>
+    <option value="3">🧆 فلافل بوراكاي (الفلبين)</option>
+  </select>
+
+  <div id="content">
+    <div class="loading">جاري تحميل البيانات...</div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabaseUrl = 'https://dzvfimkpcnexpihhfvpf.supabase.co'
+    const supabaseKey = 'sb_publishable_R0ONHQwxbn7ommQim6L97w_TsdLE7-_'
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const content = document.getElementById('content')
+    const dateLabel = document.getElementById('dateLabel')
+    const storeSelect = document.getElementById('storeSelect')
+    const fmt = n => Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })
+
+    const STORE_LABELS = {
+      'all': 'كل المحلات',
+      '1': '🏠 مطبخ البيت',
+      '2': '☁️ كلاود كيتشن',
+      '3': '🧆 فلافل بوراكاي',
+    }
+
+    // الأصناف المستبعدة من "أفضل صنف" (مكوّنات مو أكلات)
+    function isExcludedItem(name) {
+      const n = (name || '').trim().toLowerCase()
+      return n === 'olive oil' || n.includes('olive oil')
+    }
+
+    let acctRow = null       // ملخص محاسبي (كل المحلات) من daily_sales
+    let acctDate = null
+    let allRows = []         // كل صفوف المبيعات الحيّة من sales_recorder
+
+    async function load() {
+      try {
+        // 1) الملخص المحاسبي: آخر يوم فيه مبيعات في daily_sales (كل المحلات مجمّعة)
+        const { data: days, error: e1 } = await supabase
+          .from('daily_sales')
+          .select('*')
+          .gt('gross_sales', 0)
+          .order('date', { ascending: false })
+          .limit(1)
+        if (e1) throw e1
+        acctRow = (days && days.length) ? days[0] : null
+        acctDate = acctRow ? acctRow.date : null
+
+        // 2) المبيعات الحيّة لكل محل من sales_recorder
+        const { data: rows, error: e2 } = await supabase
+          .from('sales_recorder')
+          .select('item, qty, total, currency, restaurant_id, created_at')
+          .order('created_at', { ascending: false })
+          .limit(2000)
+        if (e2) throw e2
+        allRows = rows || []
+
+        dateLabel.textContent = '📅 ' + new Date().toLocaleDateString('en-GB')
+        render(storeSelect.value)
+      } catch (err) {
+        content.innerHTML = '<div class="error">' + JSON.stringify(err, null, 2) + '</div>'
+      }
+    }
+
+    storeSelect.onchange = () => render(storeSelect.value)
+
+    // تجميع بيانات المحل المختار من صفوف sales_recorder
+    function aggregate(storeVal) {
+      const rows = storeVal === 'all'
+        ? allRows
+        : allRows.filter(r => String(r.restaurant_id) === String(storeVal))
+
+      const byCurrency = {}     // المبيعات لكل عملة
+      const invoices = new Set()
+      const itemQty = {}
+
+      for (const r of rows) {
+        const cur = r.currency || 'KWD'
+        byCurrency[cur] = (byCurrency[cur] || 0) + Number(r.total || 0)
+        if (r.created_at) invoices.add(r.created_at)
+        const name = (r.item || '').trim()
+        if (!name || isExcludedItem(name)) continue
+        itemQty[name] = (itemQty[name] || 0) + Number(r.qty || 0)
+      }
+
+      let bestName = '—', bestQty = 0
+      for (const n in itemQty) {
+        if (itemQty[n] > bestQty) { bestQty = itemQty[n]; bestName = n }
+      }
+
+      return { count: rows.length, byCurrency, invoices: invoices.size, bestName, bestQty }
+    }
+
+    // نص المبيعات: كل عملة لحالها (مثال: 153.00 KWD + 8,000.00 PHP)
+    function salesText(byCurrency) {
+      const parts = Object.keys(byCurrency)
+        .filter(c => Number(byCurrency[c]) > 0)
+        .map(c => `${fmt(byCurrency[c])} <span style="font-size:13px">${c}</span>`)
+      return parts.length ? parts.join(' + ') : '0'
+    }
+
+    function render(storeVal) {
+      const a = aggregate(storeVal)
+      const bestStr = a.bestQty > 0 ? `${a.bestName} (${a.bestQty})` : '—'
+      const storeName = STORE_LABELS[storeVal] || 'كل المحلات'
+
+      // قسم مبيعات نقاط البيع (يتغيّر حسب المحل)
+      const posCards = `
+        <div class="grid">
+          <div class="card"><div class="label">💰 المبيعات</div><div class="value">${salesText(a.byCurrency)}</div></div>
+          <div class="card"><div class="label">🧾 الفواتير</div><div class="value">${fmt(a.invoices)}</div></div>
+          <div class="card wide"><div class="label">🏆 أفضل صنف</div><div class="value full">${bestStr}</div></div>
+        </div>`
+
+      const emptyNote = a.count === 0
+        ? '<div class="note">لا توجد مبيعات مسجّلة لهذا المحل بعد.</div>'
+        : ''
+
+      // قسم الملخص المحاسبي (كل المحلات — ثابت، لا يتأثر باختيار المحل)
+      let acctHtml = ''
+      if (acctRow) {
+        acctHtml = `
+          <div class="section-title">📈 ملخص محاسبي — كل المحلات</div>
+          <div class="note">أرقام إجمالية لكل المحلات (ما تنقسم لكل محل بعد) — من daily_sales ليوم ${acctDate}.</div>
+          <div class="grid">
+            <div class="card"><div class="label">📈 الربح</div><div class="value">${fmt(acctRow.gross_profit)} <span style="font-size:13px">KWD</span></div></div>
+            <div class="card"><div class="label">🗑 الهدر</div><div class="value">${fmt(acctRow.waste)} <span style="font-size:13px">KWD</span></div></div>
+            <div class="card wide"><div class="label">📊 هامش الربح</div><div class="value">${fmt(acctRow.margin)}<span style="font-size:13px">٪</span></div></div>
+          </div>`
+      }
+
+      const recs = buildRecs(a, acctRow)
+
+      content.innerHTML = `
+        <div class="section-title">🛒 مبيعات نقاط البيع — ${storeName}</div>
+        ${emptyNote}
+        ${posCards}
+        ${acctHtml}
+        <div class="section-title">🎯 شنو أسوي اليوم؟</div>
+        ${recs}`
+    }
+
+    function buildRecs(a, acctRow) {
+      const recList = []
+      const bestName = a.bestQty > 0 ? a.bestName : null
+
+      // المخزون (بناءً على الهدر الإجمالي)
+      if (acctRow && Number(acctRow.waste) > 0) {
+        recList.push(['🛒', 'هدر المخزون (كل المحلات)', `فيه هدر ${fmt(acctRow.waste)} KWD. قلّل كمية الطلب لتقليل الفاقد.`])
+      } else {
+        recList.push(['🛒', 'المخزون', `ما فيه هدر مسجّل 👍 حافظ على نفس كمية الطلب.`])
+      }
+
+      // أكثر صنف مباع (حسب المحل المختار)
+      if (bestName) {
+        recList.push(['🏆', 'أكثر صنف مباع', `${bestName} هو الأكثر مبيعاً. جهّز كميته من الصبح لتفادي الانتظار.`])
+      }
+
+      // التسعير (بناءً على الهامش الإجمالي)
+      if (acctRow) {
+        const m = Number(acctRow.margin)
+        if (m && (m <= 1 ? m < 0.3 : m < 30)) {
+          recList.push(['💰', 'التسعير', `هامش الربح منخفض. ركّز على الأصناف عالية الربح في عروض اليوم.`])
+        } else {
+          recList.push(['💰', 'البيع', `الأرباح جيدة. اعرض ${bestName || 'أفضل صنف'} بعروض لزيادة المبيعات أكثر.`])
+        }
+      }
+
+      return recList.map(([icon, title, text]) => `
+        <div class="rec">
+          <div class="icon">${icon}</div>
+          <div class="text"><strong>${title}</strong>${text}</div>
+        </div>`).join('')
+    }
+
+    load()
+  </script>
+</body>
+</html>
