@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Falafel Boracay — FranchiseOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a1712; --bg2:#0c1c15; --panel:#112319; --panel2:#14291d;
+    --line:rgba(150,190,160,.12); --line2:rgba(150,190,160,.20);
+    --cream:#f3efe3; --muted:#8aa294; --muted2:#6f897b;
+    --gold:#dca85a; --gold2:#e8be77; --up:#73d99a; --down:#e08a6b; --green:#1f7a4d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--bg);}
+  body{
+    font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--cream);min-height:100vh;
+    display:flex;justify-content:center;
+    background:
+      radial-gradient(900px 500px at 80% -10%, rgba(220,168,90,.10), transparent 60%),
+      radial-gradient(700px 500px at -10% 30%, rgba(115,217,154,.06), transparent 55%),
+      var(--bg);
+  }
+  .app{width:100%;max-width:460px;min-height:100vh;padding:22px 20px 120px;position:relative;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;}
+  .brand{display:flex;align-items:center;gap:11px;}
+  .brand .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(150deg,#16301f,#0e2016);
+    border:1px solid var(--line2);display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:9px;}
+  .brand .logo i{display:block;width:4px;border-radius:2px;background:var(--gold);}
+  .brand .logo i:nth-child(1){height:7px;opacity:.6}.brand .logo i:nth-child(2){height:12px;opacity:.8}.brand .logo i:nth-child(3){height:17px}
+  .brand .name{font-family:'Fraunces',serif;font-size:21px;font-weight:700;letter-spacing:.2px;}
+  .brand .name em{font-style:italic;font-weight:600;color:var(--gold);}
+  .storepill{display:inline-flex;align-items:center;gap:9px;font-size:14.5px;font-weight:600;
+    color:var(--cream);background:rgba(115,217,154,.07);border:1px solid var(--line2);border-radius:999px;padding:9px 16px;}
+  .storepill .dot{width:8px;height:8px;border-radius:50%;background:var(--up);box-shadow:0 0 8px var(--up);}
+
+  .h1{font-family:'Fraunces',serif;font-size:40px;line-height:1;font-weight:600;letter-spacing:-.5px;margin-bottom:5px;}
+  .h1 em{font-style:italic;color:var(--gold);}
+  .subtitle{color:var(--muted);font-size:14px;font-weight:500;margin-bottom:20px;letter-spacing:.2px;}
+
+  .hero{background:radial-gradient(420px 220px at 90% 0%, rgba(220,168,90,.12), transparent 60%),linear-gradient(160deg,var(--panel2),var(--bg2));
+    border:1px solid var(--line);border-radius:22px;padding:22px 22px 8px;margin-bottom:14px;overflow:hidden;position:relative;}
+  .hero .cap{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;}
+  .hero .cap .dot{width:9px;height:9px;border-radius:50%;background:var(--up);box-shadow:0 0 8px var(--up);}
+  .hero .big{font-family:'Fraunces',serif;font-size:56px;line-height:.95;font-weight:600;letter-spacing:-1px;display:flex;align-items:baseline;gap:4px;}
+  .hero .big .cur{font-size:30px;font-weight:500;color:var(--muted);}
+  .hero .delta{margin-top:12px;font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+  .hero .delta.up{color:var(--up);}.hero .delta.down{color:var(--down);}.hero .delta.flat{color:var(--muted);}
+  .spark{margin:14px -22px 0;display:block;width:calc(100% + 44px);height:88px;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:26px;}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 16px 15px;}
+  .stat .lbl{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:9px;}
+  .stat .num{font-family:'Fraunces',serif;font-size:30px;font-weight:600;line-height:1;letter-spacing:-.5px;}
+  .stat .num.sm{font-size:21px;line-height:1.15;}
+  .stat .foot{font-size:12.5px;font-weight:600;margin-top:7px;}
+  .stat .foot.up{color:var(--up);}.stat .foot.down{color:var(--down);}.stat .foot.mut{color:var(--muted2);font-weight:500;}
+
+  .advhead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;}
+  .advhead h2{font-family:'Fraunces',serif;font-size:25px;font-weight:600;}
+  .advhead h2 em{font-style:italic;color:var(--gold);}
+  .advhead .more{color:var(--gold);font-size:13.5px;font-weight:600;cursor:pointer;background:none;border:none;font-family:inherit;}
+  .insight{background:linear-gradient(150deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:18px;
+    padding:16px 17px;margin-bottom:11px;display:flex;gap:13px;align-items:flex-start;}
+  .insight .spk{color:var(--gold);font-size:17px;line-height:1.4;flex:none;}
+  .insight .body{font-size:14.5px;line-height:1.55;color:#dfe7df;}
+  .insight .body b{color:var(--cream);font-weight:700;}.insight .body .hi{color:var(--gold2);font-weight:700;}
+
+  .loading{padding:60px 0;text-align:center;color:var(--muted);font-size:15px;}
+  .err{background:#2a1512;border:1px solid #5a2a22;color:#f0b8aa;border-radius:14px;padding:14px;font-size:12.5px;white-space:pre-wrap;line-height:1.5;}
+
+  .pos-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+  .item-btn{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:0 0 14px;cursor:pointer;
+    text-align:center;transition:transform .1s;overflow:hidden;display:flex;flex-direction:column;align-items:stretch;}
+  .item-btn:active{transform:scale(.97);}
+  .item-btn .thumb{position:relative;width:100%;aspect-ratio:1/1;background:linear-gradient(150deg,#16301f,#0e2016);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .item-btn .thumb .emoji{font-size:64px;line-height:1;}
+  .item-btn .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .item-btn .name{font-size:16px;font-weight:700;line-height:1.25;margin-top:12px;padding:0 8px;}
+  .item-btn .price{font-size:15px;color:var(--gold2);font-weight:800;margin-top:4px;}
+
+  .cart{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);width:100%;max-width:460px;
+    background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:22px 22px 0 0;
+    padding:14px 18px;box-shadow:0 -10px 30px rgba(0,0,0,.4);max-height:60vh;overflow-y:auto;display:none;}
+  .cart.show{display:block;}
+  .cart-title{font-size:13px;font-weight:800;margin-bottom:6px;display:flex;justify-content:space-between;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+  .cart-line{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:15px;border-bottom:1px solid var(--line);}
+  .cart-line:last-child{border-bottom:none;}
+  .ctrl{display:flex;align-items:center;gap:12px;}
+  .ctrl button{width:40px;height:40px;border-radius:12px;border:none;background:rgba(115,217,154,.10);color:var(--gold2);font-size:22px;font-weight:800;cursor:pointer;}
+  .ctrl b{min-width:22px;text-align:center;font-size:16px;}
+  .empty{color:var(--muted2);text-align:center;padding:14px;font-size:15px;}
+  .total-row{display:flex;justify-content:space-between;font-family:'Fraunces',serif;font-size:24px;font-weight:600;margin:12px 0;padding-top:12px;border-top:1px solid var(--line2);}
+  .confirm-btn{width:100%;padding:17px;border:none;border-radius:15px;background:var(--green);color:#fff;font-size:17px;font-weight:800;cursor:pointer;font-family:inherit;}
+  .confirm-btn:disabled{background:#243a2e;color:#5e7567;}
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:13px 26px;border-radius:14px;font-weight:700;font-size:16px;opacity:0;transition:opacity .3s;z-index:99;pointer-events:none;}
+  .toast.show{opacity:1;}
+
+  .view{display:none;}
+  .view.active{display:block;}
+  .nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:460px;
+    background:linear-gradient(0deg,var(--bg) 78%,transparent);padding:12px 26px max(16px,env(safe-area-inset-bottom));
+    display:flex;justify-content:space-around;z-index:50;}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--muted2);font-size:11px;font-weight:600;letter-spacing:.3px;cursor:pointer;}
+  .nav a.active{color:var(--gold);}
+  .nav a svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.7;}
+
+  .rise{opacity:0;transform:translateY(14px);animation:rise .55s cubic-bezier(.2,.7,.3,1) forwards;}
+  @keyframes rise{to{opacity:1;transform:none;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo"><i></i><i></i><i></i></div>
+      <div class="name">Franchise<em>OS</em></div>
+    </div>
+    <div class="storepill"><span class="dot"></span>Falafel Boracay</div>
+  </div>
+
+  <div class="view active" id="view-home">
+    <div class="h1">Today's <em>pulse</em></div>
+    <div class="subtitle" id="subtitle">Loading…</div>
+    <div id="homeContent"><div class="loading">Loading your numbers…</div></div>
+  </div>
+
+  <div class="view" id="view-pos">
+    <div class="h1">New <em>sale</em></div>
+    <div class="subtitle">Tap an item to add it · cart shows below</div>
+    <div class="pos-grid" id="posGrid"></div>
+  </div>
+
+  <div class="view" id="view-advisor">
+    <div class="h1">Your <em>advisor</em></div>
+    <div class="subtitle">Smart tips from today's numbers</div>
+    <div id="advisorContent"><div class="loading">Reading your day…</div></div>
+  </div>
+</div>
+
+<div class="cart" id="cart">
+  <div class="cart-title"><span>Order</span><span id="count">0 items</span></div>
+  <div id="cartLines"><div class="empty">No items yet</div></div>
+  <div class="total-row"><span>Total</span><span id="total">₱0</span></div>
+  <button class="confirm-btn" id="confirmBtn" disabled>Confirm Sale (Cash)</button>
+</div>
+
+<div class="toast" id="toast">✅ Sale saved</div>
+
+<nav class="nav">
+  <a data-view="home" class="active"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</a>
+  <a data-view="pos"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>POS</a>
+  <a data-view="advisor"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>Advisor</a>
+</nav>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+const supabase = createClient(
+  'https://dzvfimkpcnexpihhfvpf.supabase.co',
+  'sb_publishable_R0ONHQwxbn7ommQim6L97w_TsdLE7-_'
+)
+
+const RESTAURANT_ID = 3
+const CUR = { sym:'₱', dec:0 }
+const SHOP_TZ = 'Asia/Manila'
+
+const MENU = [
+  { name:"Falafel Sandwich", price:180, emoji:"🥙", img:"images/sandwich.jpg" },
+  { name:"Falafel Wrap",     price:200, emoji:"🌯", img:"images/wrap.jpg" },
+  { name:"Falafel Plate",    price:280, emoji:"🍽️", img:"images/plate.jpg" },
+  { name:"Hummus Bowl",      price:220, emoji:"🥣", img:"images/hummus.jpg" },
+]
+
+const dayName=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+const monName=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const _keyFmt=new Intl.DateTimeFormat('en-CA',{timeZone:SHOP_TZ,year:'numeric',month:'2-digit',day:'2-digit'})
+const dateKey=d=>_keyFmt.format(new Date(d))
+const addDaysKey=(k,n)=>{const x=new Date(k+'T00:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)}
+const keyWeekday=k=>new Date(k+'T00:00:00Z').getUTCDay()
+const isExcluded=n=>(n||'').trim().toLowerCase().includes('olive oil')
+const money=n=>CUR.sym+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:CUR.dec})
+const fmt=n=>Number(n||0).toLocaleString('en-US')
+
+const subtitle=document.getElementById('subtitle')
+const homeContent=document.getElementById('homeContent')
+const advisorContent=document.getElementById('advisorContent')
+const toast=document.getElementById('toast')
+let allRows=[]
+
+async function load(){
+  try{
+    const { data, error } = await supabase
+      .from('sales_recorder')
+      .select('item, qty, total, currency, restaurant_id, created_at')
+      .eq('restaurant_id', RESTAURANT_ID)
+      .order('created_at',{ascending:false}).limit(3000)
+    if(error) throw error
+    allRows = data || []
+    renderHome(); renderAdvisor()
+  }catch(err){
+    homeContent.innerHTML='<div class="err">'+JSON.stringify(err,null,2)+'</div>'
+    subtitle.textContent='Could not load data'
+  }
+}
+
+function buildDays(){
+  const days={}
+  for(const r of allRows){
+    if(!r.created_at) continue
+    const k=dateKey(r.created_at)
+    const d=days[k]||(days[k]={rev:0,inv:new Set(),items:{},qty:0})
+    d.rev+=Number(r.total||0); d.inv.add(r.created_at)
+    const nm=(r.item||'').trim()
+    if(nm&&!isExcluded(nm)){ d.items[nm]=(d.items[nm]||0)+Number(r.qty||0); d.qty+=Number(r.qty||0) }
+  }
+  return days
+}
+function topItem(day){let n='—',q=0;for(const k in day.items){if(day.items[k]>q){q=day.items[k];n=k}}return {name:n,qty:q}}
+
+let lastStats=null
+function computeStats(){
+  const days=buildDays()
+  const keys=Object.keys(days).sort()
+  if(keys.length===0) return null
+  const todayK=dateKey(new Date())
+  const hasToday=days[todayK]&&days[todayK].rev>0
+  const periodK=hasToday?todayK:keys[keys.length-1]
+  const day=days[periodK]
+  const rev=day.rev, orders=day.inv.size, avg=orders?rev/orders:0, top=topItem(day)
+  const prevK=addDaysKey(periodK,-7)
+  const prevRev=days[prevK]?days[prevK].rev:null
+  let deltaPct=null; if(prevRev&&prevRev>0) deltaPct=((rev-prevRev)/prevRev)*100
+  let oSum=0,oN=0; for(const k of keys){if(k===periodK)continue;const o=days[k].inv.size;if(o){oSum+=o;oN++}}
+  const ordHist=oN?oSum/oN:null, ordDelta=(ordHist!=null)?Math.round(orders-ordHist):null
+  let tSum=0,tN=0; for(const k of keys){if(k===periodK)continue;const o=days[k].inv.size;if(o){tSum+=days[k].rev/o;tN++}}
+  const avgHist=tN?tSum/tN:null, avgDelta=(avgHist!=null)?avg-avgHist:null
+  const series=keys.slice(-12).map(k=>days[k].rev)
+  return {hasToday,periodK,rev,orders,avg,top,deltaPct,ordDelta,avgDelta,series,products:Object.keys(day.items).length,qty:day.qty}
+}
+
+function footHtml(delta,fmtFn,isInt){
+  if(delta==null) return '<div class="foot mut">no history yet</div>'
+  if((isInt&&delta===0)||(!isInt&&Math.abs(delta)<.005)) return '<div class="foot mut">flat vs avg</div>'
+  const up=delta>=0; return `<div class="foot ${up?'up':'down'}">${fmtFn(delta)}</div>`
+}
+function sparkline(series){
+  const w=460,h=88,pad=6,data=series.length?series:[0,0]
+  const max=Math.max(...data,1),min=Math.min(...data,0),span=(max-min)||1,n=data.length
+  const X=i=>n<=1?w/2:pad+i*(w-2*pad)/(n-1), Y=v=>(h-12)-((v-min)/span)*(h-26)
+  let d=''; data.forEach((v,i)=>{d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '})
+  const area=d+`L ${X(n-1).toFixed(1)} ${h} L ${X(0).toFixed(1)} ${h} Z`
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#dca85a" stop-opacity=".30"/><stop offset="1" stop-color="#dca85a" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#g)"/><path d="${d}" fill="none" stroke="#dca85a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+}
+
+function renderHome(){
+  const s=computeStats(); lastStats=s
+  if(!s){
+    subtitle.textContent='No sales yet'
+    homeContent.innerHTML=`<div class="insight"><div class="spk">✦</div><div class="body">No sales recorded yet. Open the <span class="hi">POS</span> tab to log the first sale of the day.</div></div>`
+    return
+  }
+  const pd=s.periodK.split('-'),wd=keyWeekday(s.periodK)
+  const cap=s.hasToday?'NET REVENUE · TODAY':'NET REVENUE · '+dayName[wd].toUpperCase()+' '+Number(pd[2])+' '+monName[Number(pd[1])-1]
+  const tk=dateKey(new Date()).split('-')
+  subtitle.textContent=(s.hasToday?dayName[keyWeekday(dateKey(new Date()))]+' · '+monName[Number(tk[1])-1]+' '+Number(tk[2]):'Latest active day · '+s.periodK)+' · Falafel Boracay'
+  let deltaHtml=`<div class="delta flat">— first period on record</div>`
+  if(s.deltaPct!=null){const up=s.deltaPct>=0;deltaHtml=`<div class="delta ${up?'up':'down'}">${up?'▲':'▼'} ${Math.abs(s.deltaPct).toFixed(1)}% vs ${dayName[wd].slice(0,3)} last week</div>`}
+  homeContent.innerHTML=`
+    <div class="hero rise">
+      <div class="cap"><span class="dot"></span>${cap}</div>
+      <div class="big"><span class="cur">${CUR.sym}</span>${Number(s.rev).toLocaleString('en-US',{maximumFractionDigits:CUR.dec})}</div>
+      ${deltaHtml}${sparkline(s.series)}
+    </div>
+    <div class="grid">
+      <div class="stat rise" style="animation-delay:.04s"><div class="lbl">Orders</div><div class="num">${s.orders}</div>${footHtml(s.ordDelta,v=>(v>=0?'+':'')+v+' vs avg',true)}</div>
+      <div class="stat rise" style="animation-delay:.08s"><div class="lbl">Avg ticket</div><div class="num">${s.orders?money(s.avg):'—'}</div>${s.orders?footHtml(s.avgDelta,v=>(v>=0?'+':'−')+money(Math.abs(v)),false):'<div class="foot mut">no orders</div>'}</div>
+      <div class="stat rise" style="animation-delay:.12s"><div class="lbl">Items sold</div><div class="num">${s.qty}</div><div class="foot mut">${s.products} product${s.products===1?'':'s'}</div></div>
+      <div class="stat rise" style="animation-delay:.16s"><div class="lbl">Top item</div><div class="num sm">${s.top.qty?s.top.name:'—'}</div><div class="foot mut">${s.top.qty?s.top.qty+' sold':'&nbsp;'}</div></div>
+    </div>
+    <div class="advhead"><h2>Advisor <em>insights</em></h2><span class="more" id="goAdv">See all →</span></div>
+    <div>${insightsHtml(s,false)}</div>`
+  const g=document.getElementById('goAdv'); if(g) g.onclick=()=>switchView('advisor')
+}
+
+function renderAdvisor(){
+  const s=lastStats||computeStats()
+  if(!s){ advisorContent.innerHTML=`<div class="insight"><div class="spk">✦</div><div class="body">No sales yet to analyse. Make a sale from the <span class="hi">POS</span> tab and tips will appear here.</div></div>`; return }
+  advisorContent.innerHTML=insightsHtml(s,true)
+}
+
+function insightsHtml(s,expanded){
+  const list=[]
+  if(!s.orders){ list.push(`No sales logged this period. Open the <span class="hi">POS</span> to start selling.`) }
+  else if(s.deltaPct!=null){ const up=s.deltaPct>=0
+    list.push(`${s.hasToday?"Today's":"This day's"} net is <b>${money(s.rev)}</b>, <span class="hi">${up?'up':'down'} ${Math.abs(s.deltaPct).toFixed(0)}%</span> vs the same day last week. ${up?'Momentum is good — keep the bestseller stocked.':'Dip vs last week — consider a quick promo on a slow item.'}`) }
+  else { list.push(`${s.hasToday?"Today's":"This day's"} net is <b>${money(s.rev)}</b> across <b>${s.orders}</b> order${s.orders===1?'':'s'}. A few more days and week-on-week trends will show.`) }
+  if(s.top&&s.top.qty) list.push(`Top seller is <b>${s.top.name}</b> (<span class="hi">${s.top.qty} sold</span>). Prep extra from the morning to avoid wait times at the rush.`)
+  if(expanded){
+    if(s.orders) list.push(`Average ticket is <b>${money(s.avg)}</b>. Try bundling the top seller with a drink to nudge it higher.`)
+    if(s.ordDelta!=null&&s.ordDelta!==0){const up=s.ordDelta>0;list.push(`Order count is <b>${up?'above':'below'} your daily average</b> (${(up?'+':'')+s.ordDelta}). ${up?'Make sure staffing matches the demand.':'A lighter day — good time for prep and cleaning.'}`)}
+    list.push(`Want an AI advisor you can ask anything about the shop? That's the next upgrade coming to FranchiseOS.`)
+  }
+  return list.map(t=>`<div class="insight rise"><div class="spk">✦</div><div class="body">${t}</div></div>`).join('')
+}
+
+/* POS */
+const cart={}
+const posGrid=document.getElementById('posGrid')
+const cartEl=document.getElementById('cart')
+const cartLines=document.getElementById('cartLines')
+const totalEl=document.getElementById('total')
+const countEl=document.getElementById('count')
+const confirmBtn=document.getElementById('confirmBtn')
+
+MENU.forEach(item=>{
+  const btn=document.createElement('button'); btn.className='item-btn'
+  btn.innerHTML=`<div class="thumb"><span class="emoji">${item.emoji}</span><img src="${item.img}" alt="" onerror="this.remove()"></div>`+
+    `<div class="name">${item.name}</div><div class="price">${CUR.sym}${fmt(item.price)}</div>`
+  btn.onclick=()=>{ if(!cart[item.name])cart[item.name]={price:item.price,qty:0}; cart[item.name].qty++; renderCart() }
+  posGrid.appendChild(btn)
+})
+function changeQty(n,d){ if(!cart[n])return; cart[n].qty+=d; if(cart[n].qty<=0)delete cart[n]; renderCart() }
+window._inc=n=>changeQty(n,1); window._dec=n=>changeQty(n,-1)
+function renderCart(){
+  const names=Object.keys(cart)
+  cartLines.innerHTML = names.length===0 ? '<div class="empty">No items yet</div>' :
+    names.map(n=>{const c=cart[n],safe=n.replace(/'/g,"\\'");return `<div class="cart-line"><span>${n} — ${money(c.price*c.qty)}</span><span class="ctrl"><button onclick="window._dec('${safe}')">−</button><b>${c.qty}</b><button onclick="window._inc('${safe}')">+</button></span></div>`}).join('')
+  let total=0,items=0; names.forEach(n=>{total+=cart[n].price*cart[n].qty;items+=cart[n].qty})
+  totalEl.textContent=money(total); countEl.textContent=items+(items===1?' item':' items'); confirmBtn.disabled=items===0
+}
+confirmBtn.onclick=async()=>{
+  confirmBtn.disabled=true; confirmBtn.textContent='Saving...'
+  const now=new Date(), dateStr=now.toISOString().split('T')[0]
+  const rows=Object.keys(cart).map(n=>({timestamp:now.toISOString(),date:dateStr,item:n,qty:cart[n].qty,price:cart[n].price,total:cart[n].price*cart[n].qty,currency:'PHP',restaurant_id:RESTAURANT_ID}))
+  const { error } = await supabase.from('sales_recorder').insert(rows)
+  confirmBtn.textContent='Confirm Sale (Cash)'
+  if(error){ alert('Save error:\n'+JSON.stringify(error,null,2)); confirmBtn.disabled=false; return }
+  for(const k in cart) delete cart[k]
+  renderCart()
+  toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),2000)
+  load()
+}
+
+/* nav */
+function switchView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active', el.id==='view-'+v))
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active', a.dataset.view===v))
+  cartEl.classList.toggle('show', v==='pos')
+  window.scrollTo(0,0)
+}
+document.querySelectorAll('.nav a').forEach(a=>a.onclick=()=>switchView(a.dataset.view))
+
+renderCart()
+load()
+</script>
+</body>
+</html>
