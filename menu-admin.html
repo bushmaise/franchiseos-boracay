@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Menu Manager — Falafel Boracay</title>
+<meta name="theme-color" content="#0a1712">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a1712; --bg2:#0c1c15; --panel:#112319; --panel2:#14291d;
+    --line:rgba(150,190,160,.12); --line2:rgba(150,190,160,.20);
+    --cream:#f3efe3; --muted:#8aa294; --muted2:#6f897b;
+    --gold:#dca85a; --gold2:#e8be77; --up:#73d99a; --down:#e08a6b; --green:#1f7a4d; --red:#c2533f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--bg);}
+  body{
+    font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--cream);min-height:100vh;
+    display:flex;justify-content:center;
+    background:
+      radial-gradient(900px 500px at 80% -10%, rgba(220,168,90,.10), transparent 60%),
+      radial-gradient(700px 500px at -10% 30%, rgba(115,217,154,.06), transparent 55%),
+      var(--bg);
+  }
+  .app{width:100%;max-width:460px;min-height:100vh;padding:22px 20px 60px;position:relative;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;}
+  .brand{display:flex;align-items:center;gap:11px;}
+  .brand .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(150deg,#16301f,#0e2016);
+    border:1px solid var(--line2);display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:9px;}
+  .brand .logo i{display:block;width:4px;border-radius:2px;background:var(--gold);}
+  .brand .logo i:nth-child(1){height:7px;opacity:.6}.brand .logo i:nth-child(2){height:12px;opacity:.8}.brand .logo i:nth-child(3){height:17px}
+  .brand .name{font-family:'Fraunces',serif;font-size:21px;font-weight:700;letter-spacing:.2px;}
+  .brand .name em{font-style:italic;font-weight:600;color:var(--gold);}
+  .storepill{display:inline-flex;align-items:center;gap:9px;font-size:14.5px;font-weight:600;
+    color:var(--cream);background:rgba(115,217,154,.07);border:1px solid var(--line2);border-radius:999px;padding:9px 16px;}
+  .storepill .dot{width:8px;height:8px;border-radius:50%;background:var(--up);box-shadow:0 0 8px var(--up);}
+
+  .h1{font-family:'Fraunces',serif;font-size:40px;line-height:1;font-weight:600;letter-spacing:-.5px;margin-bottom:5px;}
+  .h1 em{font-style:italic;color:var(--gold);}
+  .subtitle{color:var(--muted);font-size:14px;font-weight:500;margin-bottom:20px;letter-spacing:.2px;}
+
+  .addbtn{width:100%;padding:16px;border:1px dashed var(--line2);border-radius:16px;background:rgba(220,168,90,.06);
+    color:var(--gold2);font-family:'Hanken Grotesk',sans-serif;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:24px;
+    display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;}
+  .addbtn:active{background:rgba(220,168,90,.12);}
+
+  .cat{margin-bottom:24px;}
+  .cat-h{color:var(--muted);font-size:11.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:11px;padding-left:2px;}
+
+  .item{display:flex;align-items:center;gap:13px;background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:transform .1s,border-color .15s;}
+  .item:active{transform:scale(.99);}
+  .item.off{opacity:.5;}
+  .item .thumb{width:48px;height:48px;border-radius:12px;background:linear-gradient(150deg,#16301f,#0e2016);
+    display:flex;align-items:center;justify-content:center;font-size:26px;flex:none;overflow:hidden;position:relative;}
+  .item .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .item .info{flex:1;min-width:0;}
+  .item .nm{font-size:16px;font-weight:700;line-height:1.2;}
+  .item .pr{font-size:14px;color:var(--gold2);font-weight:700;margin-top:3px;}
+  .item .offtag{font-size:10px;color:var(--down);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:3px;}
+  .item .chev{color:var(--muted2);font-size:22px;flex:none;line-height:1;}
+
+  .empty{text-align:center;color:var(--muted);padding:50px 20px;font-size:15px;line-height:1.7;}
+  .empty b{color:var(--gold2);}
+  .loading{text-align:center;color:var(--muted);padding:50px 0;font-size:15px;}
+  .err{background:#2a1512;border:1px solid #5a2a22;color:#f0b8aa;border-radius:14px;padding:14px;font-size:12.5px;white-space:pre-wrap;line-height:1.5;}
+
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40;}
+  .scrim.show{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(105%);width:100%;max-width:460px;
+    background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:24px 24px 0 0;
+    padding:18px 20px max(24px,env(safe-area-inset-bottom));box-shadow:0 -16px 40px rgba(0,0,0,.5);
+    z-index:50;transition:transform .25s cubic-bezier(.2,.7,.3,1);max-height:94vh;overflow-y:auto;}
+  .sheet.show{transform:translateX(-50%) translateY(0);}
+  .grab{width:40px;height:4px;border-radius:2px;background:var(--line2);margin:0 auto 16px;}
+  .sheet h2{font-family:'Fraunces',serif;font-size:25px;font-weight:600;margin-bottom:18px;}
+  .sheet h2 em{font-style:italic;color:var(--gold);}
+  .field{margin-bottom:15px;}
+  .field label{display:block;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px;}
+  .field input{width:100%;padding:14px 15px;border-radius:13px;border:1px solid var(--line2);background:rgba(0,0,0,.18);
+    color:var(--cream);font-family:'Hanken Grotesk',sans-serif;font-size:16px;font-weight:500;outline:none;transition:border-color .15s;}
+  .field input::placeholder{color:var(--muted2);}
+  .field input:focus{border-color:var(--gold);}
+  .field .hint{color:var(--muted2);font-size:11.5px;font-weight:500;margin-top:6px;line-height:1.5;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .emojipick{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px;}
+  .emojipick button{width:42px;height:42px;border-radius:11px;border:1px solid var(--line2);background:rgba(0,0,0,.18);font-size:22px;cursor:pointer;}
+  .emojipick button.sel{border-color:var(--gold);background:rgba(220,168,90,.16);}
+  .toggle{display:flex;align-items:center;justify-content:space-between;padding:14px 15px;border:1px solid var(--line2);border-radius:13px;background:rgba(0,0,0,.18);}
+  .toggle span{font-size:15px;font-weight:600;}
+  .sw{width:50px;height:30px;border-radius:999px;background:#2a3a30;position:relative;cursor:pointer;transition:background .2s;flex:none;}
+  .sw.on{background:var(--green);}
+  .sw::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s;}
+  .sw.on::after{transform:translateX(20px);}
+  .sheet-actions{display:flex;gap:10px;margin-top:20px;}
+  .btn{flex:1;padding:16px;border:none;border-radius:14px;font-family:'Hanken Grotesk',sans-serif;font-size:16px;font-weight:800;cursor:pointer;}
+  .btn-save{background:var(--green);color:#fff;}
+  .btn-save:disabled{background:#243a2e;color:#5e7567;}
+  .btn-del{background:rgba(194,83,63,.14);color:#e89384;border:1px solid rgba(194,83,63,.35);flex:none;width:58px;font-size:20px;}
+
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:13px 26px;border-radius:14px;font-weight:700;font-size:16px;opacity:0;transition:opacity .3s;z-index:99;pointer-events:none;}
+  .toast.show{opacity:1;}
+  .toast.bad{background:var(--red);}
+
+  .rise{opacity:0;transform:translateY(12px);animation:rise .5s cubic-bezier(.2,.7,.3,1) forwards;}
+  @keyframes rise{to{opacity:1;transform:none;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo"><i></i><i></i><i></i></div>
+      <div class="name">Franchise<em>OS</em></div>
+    </div>
+    <div class="storepill"><span class="dot"></span>Falafel Boracay</div>
+  </div>
+
+  <div class="h1">Your <em>menu</em></div>
+  <div class="subtitle">Add items, set prices, turn items on or off</div>
+
+  <button class="addbtn" id="addBtn">＋&nbsp; Add new item</button>
+
+  <div id="list"><div class="loading">Loading your menu…</div></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <h2 id="sheetTitle">Add <em>item</em></h2>
+
+  <div class="field">
+    <label>Item name</label>
+    <input id="fName" type="text" placeholder="e.g. Falafel Pita" autocomplete="off">
+  </div>
+
+  <div class="row2">
+    <div class="field">
+      <label>Price (₱)</label>
+      <input id="fPrice" type="number" inputmode="numeric" placeholder="260">
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <input id="fCat" type="text" list="catList" placeholder="Pita Pocket" autocomplete="off">
+      <datalist id="catList"></datalist>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Icon (emoji)</label>
+    <input id="fEmoji" type="text" placeholder="🥙" maxlength="4">
+    <div class="emojipick" id="emojiPick"></div>
+  </div>
+
+  <div class="field">
+    <label>Photo link (optional)</label>
+    <input id="fImg" type="text" placeholder="https://…" autocomplete="off">
+    <div class="hint">Leave empty to use the emoji. You can add real photos later.</div>
+  </div>
+
+  <div class="field">
+    <div class="toggle">
+      <span>Available for sale</span>
+      <div class="sw on" id="fAvail"></div>
+    </div>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn btn-del" id="delBtn" style="display:none">🗑</button>
+    <button class="btn btn-save" id="saveBtn">Save item</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Saved</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+const supabase = createClient(
+  'https://dzvfimkpcnexpihhfvpf.supabase.co',
+  'sb_publishable_R0ONHQwxbn7ommQim6L97w_TsdLE7-_'
+)
+const RESTAURANT_ID = 3
+const CUR = { sym:'₱' }
+const EMOJIS = ['🥙','🌯','🍽️','🥣','🧆','🍗','🥗','🍚','🥤','🍟','🫓','🧀','🥚','🌮','🍛','🥘']
+
+const $ = id => document.getElementById(id)
+const listEl=$('list'), scrim=$('scrim'), sheet=$('sheet')
+const fName=$('fName'), fPrice=$('fPrice'), fCat=$('fCat'), fEmoji=$('fEmoji'), fImg=$('fImg'), fAvail=$('fAvail')
+const delBtn=$('delBtn'), saveBtn=$('saveBtn'), sheetTitle=$('sheetTitle'), toast=$('toast'), catList=$('catList'), emojiPick=$('emojiPick')
+
+let items=[], editingId=null
+const money = n => CUR.sym + Number(n||0).toLocaleString('en-US')
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
+
+function showToast(msg, bad){
+  toast.textContent=msg; toast.classList.toggle('bad',!!bad); toast.classList.add('show')
+  setTimeout(()=>toast.classList.remove('show'),2200)
+}
+
+EMOJIS.forEach(e=>{
+  const b=document.createElement('button'); b.type='button'; b.textContent=e
+  b.onclick=()=>{ fEmoji.value=e; markEmoji() }
+  emojiPick.appendChild(b)
+})
+function markEmoji(){ [...emojiPick.children].forEach(b=>b.classList.toggle('sel', b.textContent===fEmoji.value)) }
+fEmoji.addEventListener('input', markEmoji)
+fAvail.onclick=()=>fAvail.classList.toggle('on')
+
+async function load(){
+  try{
+    const { data, error } = await supabase
+      .from('menu_items').select('*')
+      .eq('restaurant_id', RESTAURANT_ID)
+      .order('category',{ascending:true})
+      .order('sort_order',{ascending:true})
+      .order('name',{ascending:true})
+    if(error) throw error
+    items = data || []
+    render()
+  }catch(err){
+    listEl.innerHTML='<div class="err">'+esc(JSON.stringify(err,null,2))+'</div>'
+  }
+}
+
+function render(){
+  const cats=[...new Set(items.map(i=>i.category).filter(Boolean))]
+  catList.innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('')
+
+  if(items.length===0){
+    listEl.innerHTML=`<div class="empty">No items yet.<br>Tap <b>＋ Add new item</b> above to build your menu.</div>`
+    return
+  }
+  const groups={}
+  for(const it of items){ const c=it.category||'Other'; (groups[c]=groups[c]||[]).push(it) }
+  let html='', delay=0
+  for(const c of Object.keys(groups)){
+    html+=`<div class="cat"><div class="cat-h">${esc(c)}</div>`
+    for(const it of groups[c]){
+      delay+=0.03
+      const thumb = it.image_url
+        ? `<span>${esc(it.emoji||'🍽️')}</span><img src="${esc(it.image_url)}" alt="" onerror="this.remove()">`
+        : `<span>${esc(it.emoji||'🍽️')}</span>`
+      html+=`<div class="item rise ${it.available===false?'off':''}" data-id="${it.id}" style="animation-delay:${delay.toFixed(2)}s">
+        <div class="thumb">${thumb}</div>
+        <div class="info">
+          <div class="nm">${esc(it.name)}</div>
+          <div class="pr">${money(it.price)}</div>
+          ${it.available===false?'<div class="offtag">Hidden</div>':''}
+        </div>
+        <div class="chev">&rsaquo;</div>
+      </div>`
+    }
+    html+=`</div>`
+  }
+  listEl.innerHTML=html
+  listEl.querySelectorAll('.item').forEach(el=>{ el.onclick=()=>openEdit(Number(el.dataset.id)) })
+}
+
+function openSheet(){ scrim.classList.add('show'); sheet.classList.add('show') }
+function closeSheet(){ scrim.classList.remove('show'); sheet.classList.remove('show') }
+scrim.onclick=closeSheet
+
+function openAdd(){
+  editingId=null
+  sheetTitle.innerHTML='Add <em>item</em>'
+  fName.value=''; fPrice.value=''; fCat.value=''; fEmoji.value='🍽️'; fImg.value=''
+  fAvail.classList.add('on'); delBtn.style.display='none'; markEmoji(); openSheet()
+  setTimeout(()=>fName.focus(),260)
+}
+function openEdit(id){
+  const it=items.find(x=>x.id===id); if(!it) return
+  editingId=id
+  sheetTitle.innerHTML='Edit <em>item</em>'
+  fName.value=it.name||''; fPrice.value=it.price??''; fCat.value=it.category||''
+  fEmoji.value=it.emoji||'🍽️'; fImg.value=it.image_url||''
+  fAvail.classList.toggle('on', it.available!==false); delBtn.style.display=''; markEmoji(); openSheet()
+}
+$('addBtn').onclick=openAdd
+
+saveBtn.onclick=async()=>{
+  const name=fName.value.trim(), price=parseFloat(fPrice.value)
+  if(!name){ showToast('Enter a name',true); return }
+  if(isNaN(price)){ showToast('Enter a price',true); return }
+  const row={
+    restaurant_id:RESTAURANT_ID, name, price,
+    category:fCat.value.trim()||null,
+    emoji:fEmoji.value.trim()||'🍽️',
+    image_url:fImg.value.trim()||null,
+    available:fAvail.classList.contains('on')
+  }
+  saveBtn.disabled=true; saveBtn.textContent='Saving…'
+  try{
+    const q = editingId
+      ? supabase.from('menu_items').update(row).eq('id', editingId)
+      : supabase.from('menu_items').insert(row)
+    const { error } = await q
+    if(error) throw error
+    closeSheet(); showToast('Saved'); await load()
+  }catch(err){
+    showToast('Save failed',true); alert('Save error:\n'+JSON.stringify(err,null,2))
+  }finally{ saveBtn.disabled=false; saveBtn.textContent='Save item' }
+}
+
+delBtn.onclick=async()=>{
+  if(!editingId) return
+  const it=items.find(x=>x.id===editingId)
+  if(!confirm('Delete "'+(it?it.name:'this item')+'"?')) return
+  try{
+    const { error } = await supabase.from('menu_items').delete().eq('id', editingId)
+    if(error) throw error
+    closeSheet(); showToast('Deleted'); await load()
+  }catch(err){
+    showToast('Delete failed',true); alert('Delete error:\n'+JSON.stringify(err,null,2))
+  }
+}
+
+load()
+</script>
+</body>
+</html>
