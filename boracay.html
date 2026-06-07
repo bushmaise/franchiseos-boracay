@@ -179,12 +179,7 @@ const RESTAURANT_ID = 3
 const CUR = { sym:'₱', dec:0 }
 const SHOP_TZ = 'Asia/Manila'
 
-const MENU = [
-  { name:"Falafel Sandwich", price:180, emoji:"🥙", img:"images/sandwich.jpg" },
-  { name:"Falafel Wrap",     price:200, emoji:"🌯", img:"images/wrap.jpg" },
-  { name:"Falafel Plate",    price:280, emoji:"🍽️", img:"images/plate.jpg" },
-  { name:"Hummus Bowl",      price:220, emoji:"🥣", img:"images/hummus.jpg" },
-]
+let MENU = []   // loaded live from the menu_items table
 
 const dayName=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
 const monName=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -329,13 +324,36 @@ const totalEl=document.getElementById('total')
 const countEl=document.getElementById('count')
 const confirmBtn=document.getElementById('confirmBtn')
 
-MENU.forEach(item=>{
-  const btn=document.createElement('button'); btn.className='item-btn'
-  btn.innerHTML=`<div class="thumb"><span class="emoji">${item.emoji}</span><img src="${item.img}" alt="" onerror="this.remove()"></div>`+
-    `<div class="name">${item.name}</div><div class="price">${CUR.sym}${fmt(item.price)}</div>`
-  btn.onclick=()=>{ if(!cart[item.name])cart[item.name]={price:item.price,qty:0}; cart[item.name].qty++; renderCart() }
-  posGrid.appendChild(btn)
-})
+async function loadMenu(){
+  posGrid.innerHTML='<div class="empty" style="grid-column:1/-1;text-align:center;padding:30px 0;opacity:.6">Loading menu…</div>'
+  try{
+    const { data, error } = await supabase
+      .from('menu_items')
+      .select('name, price, emoji, image_url, sort_order')
+      .eq('restaurant_id', RESTAURANT_ID)
+      .eq('available', true)
+      .order('sort_order',{ascending:true})
+      .order('name',{ascending:true})
+    if(error) throw error
+    MENU = (data||[]).map(m=>({ name:m.name, price:Number(m.price), emoji:m.emoji||'🍽️', img:m.image_url||'' }))
+  }catch(err){ MENU=[] }
+  renderMenu()
+}
+function renderMenu(){
+  posGrid.innerHTML=''
+  if(MENU.length===0){
+    posGrid.innerHTML='<div class="empty" style="grid-column:1/-1;text-align:center;padding:30px 0;opacity:.6">No menu items yet. Add them in the Menu Manager.</div>'
+    return
+  }
+  MENU.forEach(item=>{
+    const btn=document.createElement('button'); btn.className='item-btn'
+    btn.innerHTML=`<div class="thumb"><span class="emoji">${item.emoji}</span>${item.img?`<img src="${item.img}" alt="" onerror="this.remove()">`:''}</div>`+
+      `<div class="name">${item.name}</div><div class="price">${CUR.sym}${fmt(item.price)}</div>`
+    btn.onclick=()=>{ if(!cart[item.name])cart[item.name]={price:item.price,qty:0}; cart[item.name].qty++; renderCart() }
+    posGrid.appendChild(btn)
+  })
+}
+loadMenu()
 function changeQty(n,d){ if(!cart[n])return; cart[n].qty+=d; if(cart[n].qty<=0)delete cart[n]; renderCart() }
 window._inc=n=>changeQty(n,1); window._dec=n=>changeQty(n,-1)
 function renderCart(){
