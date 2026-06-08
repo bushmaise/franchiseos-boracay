@@ -244,6 +244,7 @@ function sparkline(series){
 let TENANTS=[]            // [{id,name,currency,plan,status,...}]
 let ROWS_BY_ID={}         // restaurant_id -> [rows]
 let STATS_BY_ID={}        // restaurant_id -> computeStats result
+let ME={ role:null, restaurantId:null }   // who is signed in (super_admin sees all, owner sees own restaurant)
 const viewList=document.getElementById('view-list')
 const viewDetail=document.getElementById('view-detail')
 const storeList=document.getElementById('storeList')
@@ -255,13 +256,17 @@ const STORE_APP={ 3:'boracay.html' }
 
 async function load(){
   try{
-    const t = await supabase.from('tenants').select('*').order('id',{ascending:true})
+    let tq = supabase.from('tenants').select('*').order('id',{ascending:true})
+    if(ME.role==='owner'){ tq = tq.eq('id', ME.restaurantId) }
+    const t = await tq
     if(t.error) throw t.error
     TENANTS = t.data || []
 
-    const s = await supabase.from('sales_recorder')
+    let sq = supabase.from('sales_recorder')
       .select('item, qty, total, restaurant_id, created_at')
       .order('created_at',{ascending:false}).limit(8000)
+    if(ME.role==='owner'){ sq = sq.eq('restaurant_id', ME.restaurantId) }
+    const s = await sq
     if(s.error) throw s.error
     ROWS_BY_ID={}
     for(const r of (s.data||[])){
@@ -392,13 +397,20 @@ async function checkAccess(){
   const { data:{ session } } = await supabase.auth.getSession()
   if(!session){ showLogin(); return }
   const { data:prof, error } = await supabase.from('profiles')
-    .select('role, full_name').eq('id', session.user.id).maybeSingle()
+    .select('role, full_name, restaurant_id').eq('id', session.user.id).maybeSingle()
   if(error){ showLogin('Could not verify your account — try again.'); return }
-  if(!prof || prof.role!=='super_admin'){
+  if(!prof || (prof.role!=='super_admin' && prof.role!=='owner')){
     await supabase.auth.signOut()
     showLogin('This account is not an owner. Access denied.')
     return
   }
+  if(prof.role==='owner' && !prof.restaurant_id){
+    await supabase.auth.signOut()
+    showLogin('No restaurant is linked to this owner account.')
+    return
+  }
+  ME.role = prof.role
+  ME.restaurantId = prof.restaurant_id
   showConsole(); load()
 }
 
@@ -418,7 +430,7 @@ emailEl.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin() })
 
 document.getElementById('logoutBtn').onclick=async()=>{
   await supabase.auth.signOut()
-  TENANTS=[]; STATS_BY_ID={}; ROWS_BY_ID={}
+  TENANTS=[]; STATS_BY_ID={}; ROWS_BY_ID={}; ME={ role:null, restaurantId:null }
   emailEl.value=''; passEl.value=''
   showLogin()
 }
