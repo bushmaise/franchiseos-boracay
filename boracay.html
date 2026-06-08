@@ -112,6 +112,25 @@
 
   .rise{opacity:0;transform:translateY(14px);animation:rise .55s cubic-bezier(.2,.7,.3,1) forwards;}
   @keyframes rise{to{opacity:1;transform:none;}}
+
+  .authgate{position:fixed;inset:0;z-index:1000;padding:24px;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(900px 500px at 80% -10%, rgba(220,168,90,.10), transparent 60%),var(--bg);}
+  .authgate.hidden{display:none;}
+  .authgate .card{width:100%;max-width:380px;background:linear-gradient(160deg,var(--panel2),var(--bg2));
+    border:1px solid var(--line);border-radius:24px;padding:30px 26px 28px;}
+  .authgate .lt{font-family:'Fraunces',serif;font-size:27px;font-weight:600;text-align:center;margin-bottom:4px;letter-spacing:-.3px;}
+  .authgate .lt em{font-style:italic;color:var(--gold);}
+  .authgate .ls{color:var(--muted);font-size:13px;text-align:center;margin-bottom:22px;}
+  .authgate input{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:13px;
+    padding:15px 16px;color:var(--cream);font-family:inherit;font-size:15px;margin-bottom:12px;outline:none;}
+  .authgate input:focus{border-color:var(--gold);}
+  .authgate button{width:100%;padding:16px;border:none;border-radius:13px;background:var(--green);color:#fff;
+    font-family:inherit;font-size:16px;font-weight:800;cursor:pointer;}
+  .authgate button:disabled{background:#243a2e;color:#5e7567;}
+  .authgate .le{color:var(--down);font-size:13px;font-weight:600;text-align:center;margin-top:13px;min-height:18px;line-height:1.4;}
+  .signout{position:fixed;top:14px;right:14px;z-index:60;background:rgba(150,190,160,.08);border:1px solid var(--line2);
+    color:var(--muted);font-family:inherit;font-size:11px;font-weight:700;padding:7px 12px;border-radius:999px;cursor:pointer;}
+  .signout[hidden]{display:none;}
 </style>
 
 <!-- ===== Installable app (PWA) settings — added by FranchiseOS ===== -->
@@ -125,6 +144,17 @@
 <!-- ===== end PWA settings ===== -->
 </head>
 <body>
+<div class="authgate" id="authGate">
+  <div class="card">
+    <div class="lt">Falafel <em>Boracay</em></div>
+    <div class="ls">Sign in to open your store</div>
+    <input id="agEmail" type="email" placeholder="Email" autocomplete="username">
+    <input id="agPass" type="password" placeholder="Password" autocomplete="current-password">
+    <button id="agBtn">Sign in</button>
+    <div class="le" id="agErr"></div>
+  </div>
+</div>
+<button class="signout" id="agSignout" hidden>Sign out</button>
 <div class="app">
   <div class="topbar">
     <div class="brand">
@@ -353,7 +383,6 @@ function renderMenu(){
     posGrid.appendChild(btn)
   })
 }
-loadMenu()
 function changeQty(n,d){ if(!cart[n])return; cart[n].qty+=d; if(cart[n].qty<=0)delete cart[n]; renderCart() }
 window._inc=n=>changeQty(n,1); window._dec=n=>changeQty(n,-1)
 function renderCart(){
@@ -386,7 +415,42 @@ function switchView(v){
 document.querySelectorAll('.nav a').forEach(a=>a.onclick=()=>switchView(a.dataset.view))
 
 renderCart()
-load()
+
+/* ---------- AUTH GATE ---------- */
+const STORE_ID = RESTAURANT_ID
+const agGate=document.getElementById('authGate')
+const agSignout=document.getElementById('agSignout')
+const agBtn=document.getElementById('agBtn')
+const agErr=document.getElementById('agErr')
+const agEmail=document.getElementById('agEmail')
+const agPass=document.getElementById('agPass')
+let _booted=false
+function boot(){ if(_booted)return; _booted=true; loadMenu(); load() }
+function agShowLogin(msg){ agGate.classList.remove('hidden'); agSignout.hidden=true; agErr.textContent=msg||'' }
+function agShowApp(){ agGate.classList.add('hidden'); agSignout.hidden=false; boot() }
+async function agCheck(){
+  const { data:{ session } } = await supabase.auth.getSession()
+  if(!session){ agShowLogin(); return }
+  const { data:prof, error } = await supabase.from('profiles').select('role, restaurant_id').eq('id', session.user.id).maybeSingle()
+  if(error){ agShowLogin('Could not verify your account — try again.'); return }
+  const ok = prof && (prof.role==='super_admin' || prof.restaurant_id===STORE_ID)
+  if(!ok){ await supabase.auth.signOut(); agShowLogin('This account cannot access this store.'); return }
+  agShowApp()
+}
+async function agLogin(){
+  const email=agEmail.value.trim(), pass=agPass.value
+  if(!email||!pass){ agErr.textContent='Enter your email and password.'; return }
+  agBtn.disabled=true; agBtn.textContent='Signing in…'; agErr.textContent=''
+  const { error } = await supabase.auth.signInWithPassword({ email, password:pass })
+  agBtn.disabled=false; agBtn.textContent='Sign in'
+  if(error){ agErr.textContent='Wrong email or password.'; return }
+  agPass.value=''; agCheck()
+}
+agBtn.onclick=agLogin
+agPass.addEventListener('keydown',e=>{ if(e.key==='Enter') agLogin() })
+agEmail.addEventListener('keydown',e=>{ if(e.key==='Enter') agLogin() })
+agSignout.onclick=async()=>{ await supabase.auth.signOut(); agEmail.value=''; agPass.value=''; agShowLogin() }
+agCheck()
 </script>
 </body>
 </html>
