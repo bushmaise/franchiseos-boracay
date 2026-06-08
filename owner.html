@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owner Console — FranchiseOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a1712; --bg2:#0c1c15; --panel:#112319; --panel2:#14291d;
+    --line:rgba(150,190,160,.12); --line2:rgba(150,190,160,.20);
+    --cream:#f3efe3; --muted:#8aa294; --muted2:#6f897b;
+    --gold:#dca85a; --gold2:#e8be77; --up:#73d99a; --down:#e08a6b; --green:#1f7a4d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--bg);}
+  body{
+    font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--cream);min-height:100vh;
+    display:flex;justify-content:center;
+    background:
+      radial-gradient(900px 500px at 80% -10%, rgba(220,168,90,.10), transparent 60%),
+      radial-gradient(700px 500px at -10% 30%, rgba(115,217,154,.06), transparent 55%),
+      var(--bg);
+  }
+  .app{width:100%;max-width:520px;min-height:100vh;padding:22px 20px 60px;position:relative;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;}
+  .brand{display:flex;align-items:center;gap:11px;}
+  .brand .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(150deg,#16301f,#0e2016);
+    border:1px solid var(--line2);display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:9px;}
+  .brand .logo i{display:block;width:4px;border-radius:2px;background:var(--gold);}
+  .brand .logo i:nth-child(1){height:7px;opacity:.6}.brand .logo i:nth-child(2){height:12px;opacity:.8}.brand .logo i:nth-child(3){height:17px}
+  .brand .name{font-family:'Fraunces',serif;font-size:21px;font-weight:700;letter-spacing:.2px;}
+  .brand .name em{font-style:italic;font-weight:600;color:var(--gold);}
+  .ownerpill{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.4px;
+    color:var(--gold2);background:rgba(220,168,90,.10);border:1px solid var(--line2);border-radius:999px;padding:8px 15px;text-transform:uppercase;}
+
+  .h1{font-family:'Fraunces',serif;font-size:40px;line-height:1;font-weight:600;letter-spacing:-.5px;margin-bottom:5px;}
+  .h1 em{font-style:italic;color:var(--gold);}
+  .subtitle{color:var(--muted);font-size:14px;font-weight:500;margin-bottom:22px;letter-spacing:.2px;}
+
+  /* overview strip */
+  .ov{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+  .ov-item{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px 14px;}
+  .ov-num{font-family:'Fraunces',serif;font-size:30px;font-weight:600;line-height:1;letter-spacing:-.5px;}
+  .ov-lbl{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;margin-top:8px;}
+
+  .sectlabel{color:var(--muted);font-size:11.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;margin:0 0 12px 2px;}
+
+  /* store card */
+  .store-card{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;color:inherit;
+    background:linear-gradient(155deg,var(--panel2),var(--bg2));border:1px solid var(--line);border-radius:20px;
+    padding:18px 18px 16px;margin-bottom:13px;position:relative;transition:transform .1s,border-color .2s;}
+  .store-card:active{transform:scale(.985);}
+  .store-card:hover{border-color:var(--line2);}
+  .store-top{display:flex;align-items:center;gap:10px;margin-bottom:4px;padding-right:22px;}
+  .store-name{font-family:'Fraunces',serif;font-size:22px;font-weight:600;letter-spacing:-.3px;}
+  .store-meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px;font-weight:600;margin-bottom:15px;}
+  .status{display:inline-flex;align-items:center;gap:6px;}
+  .status i{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .status.active i{background:var(--up);box-shadow:0 0 7px var(--up);}
+  .status.trial i{background:var(--gold);box-shadow:0 0 7px var(--gold);}
+  .status.suspended i{background:var(--down);}
+  .badge{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;border-radius:999px;}
+  .badge.plan-pro{background:rgba(220,168,90,.15);color:var(--gold2);border:1px solid rgba(220,168,90,.3);}
+  .badge.plan-trial{background:rgba(138,162,148,.12);color:var(--muted);border:1px solid var(--line2);}
+  .badge.plan-enterprise{background:rgba(115,217,154,.13);color:var(--up);border:1px solid rgba(115,217,154,.3);}
+  .store-stats{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;}
+  .store-stats .sv{font-family:'Fraunces',serif;font-size:20px;font-weight:600;line-height:1;letter-spacing:-.3px;}
+  .store-stats .sl{color:var(--muted2);font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin-top:6px;}
+  .store-arrow{position:absolute;top:18px;right:16px;color:var(--muted2);font-size:22px;line-height:1;}
+
+  /* detail view */
+  .back{display:inline-flex;align-items:center;gap:7px;background:none;border:none;color:var(--gold);font-family:inherit;
+    font-size:14px;font-weight:700;cursor:pointer;margin-bottom:16px;padding:4px 0;}
+  .hero{background:radial-gradient(420px 220px at 90% 0%, rgba(220,168,90,.12), transparent 60%),linear-gradient(160deg,var(--panel2),var(--bg2));
+    border:1px solid var(--line);border-radius:22px;padding:22px 22px 8px;margin-bottom:14px;overflow:hidden;position:relative;}
+  .hero .cap{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;}
+  .hero .cap .dot{width:9px;height:9px;border-radius:50%;background:var(--up);box-shadow:0 0 8px var(--up);}
+  .hero .big{font-family:'Fraunces',serif;font-size:52px;line-height:.95;font-weight:600;letter-spacing:-1px;display:flex;align-items:baseline;gap:4px;}
+  .hero .big .cur{font-size:26px;font-weight:500;color:var(--muted);}
+  .hero .delta{margin-top:12px;font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+  .hero .delta.up{color:var(--up);}.hero .delta.down{color:var(--down);}.hero .delta.flat{color:var(--muted);}
+  .spark{margin:14px -22px 0;display:block;width:calc(100% + 44px);height:88px;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 16px 15px;}
+  .stat .lbl{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:9px;}
+  .stat .num{font-family:'Fraunces',serif;font-size:28px;font-weight:600;line-height:1;letter-spacing:-.5px;}
+  .stat .num.sm{font-size:20px;line-height:1.15;}
+  .stat .foot{font-size:12.5px;font-weight:600;margin-top:7px;}
+  .stat .foot.mut{color:var(--muted2);font-weight:500;}
+
+  .insight{background:linear-gradient(150deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:18px;
+    padding:16px 17px;margin-bottom:11px;display:flex;gap:13px;align-items:flex-start;}
+  .insight .spk{color:var(--gold);font-size:17px;line-height:1.4;flex:none;}
+  .insight .body{font-size:14.5px;line-height:1.55;color:#dfe7df;}
+  .insight .body b{color:var(--cream);font-weight:700;}.insight .body .hi{color:var(--gold2);font-weight:700;}
+
+  .openapp{display:inline-flex;align-items:center;gap:8px;margin-top:6px;text-decoration:none;
+    background:var(--green);color:#fff;font-weight:800;font-size:15px;padding:14px 20px;border-radius:14px;}
+
+  .loading{padding:70px 0;text-align:center;color:var(--muted);font-size:15px;}
+  .err{background:#2a1512;border:1px solid #5a2a22;color:#f0b8aa;border-radius:14px;padding:14px;font-size:12.5px;white-space:pre-wrap;line-height:1.5;}
+  .emptyhint{color:var(--muted2);text-align:center;padding:30px 10px;font-size:14px;line-height:1.6;}
+
+  .view{display:none;}.view.active{display:block;}
+  .rise{opacity:0;transform:translateY(14px);animation:rise .5s cubic-bezier(.2,.7,.3,1) forwards;}
+  @keyframes rise{to{opacity:1;transform:none;}}
+</style>
+<meta name="theme-color" content="#0a1712">
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo"><i></i><i></i><i></i></div>
+      <div class="name">Franchise<em>OS</em></div>
+    </div>
+    <span class="ownerpill">● Owner Console</span>
+  </div>
+
+  <!-- VIEW: all stores -->
+  <div class="view active" id="view-list">
+    <div class="h1">Your <em>stores</em></div>
+    <div class="subtitle" id="listSubtitle">Loading your network…</div>
+    <div class="ov" id="overview"></div>
+    <div class="sectlabel">Subscribed restaurants</div>
+    <div id="storeList"><div class="loading">Loading stores…</div></div>
+  </div>
+
+  <!-- VIEW: store detail -->
+  <div class="view" id="view-detail">
+    <button class="back" id="backBtn">← All stores</button>
+    <div class="h1" id="detailName"></div>
+    <div class="subtitle" id="detailSubtitle"></div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+const supabase = createClient(
+  'https://dzvfimkpcnexpihhfvpf.supabase.co',
+  'sb_publishable_R0ONHQwxbn7ommQim6L97w_TsdLE7-_'
+)
+
+/* ---- currency + helpers ---- */
+const CURMAP = {
+  PHP:{sym:'₱',  dec:0, tz:'Asia/Manila'},
+  KWD:{sym:'KD ',dec:3, tz:'Asia/Kuwait'},
+  USD:{sym:'$',  dec:2, tz:'UTC'},
+  AED:{sym:'AED ',dec:2, tz:'Asia/Dubai'},
+}
+const curOf=code=>CURMAP[code]||{sym:'',dec:0,tz:'UTC'}
+const money=(n,c)=>c.sym+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:c.dec,maximumFractionDigits:c.dec})
+const fmt=n=>Number(n||0).toLocaleString('en-US')
+const dayName=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+const monName=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const isExcluded=n=>(n||'').trim().toLowerCase().includes('olive oil')
+const dateKeyTZ=(d,tz)=>new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(d))
+const addDaysKey=(k,n)=>{const x=new Date(k+'T00:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)}
+const prettyDay=k=>{const p=k.split('-');return monName[Number(p[1])-1]+' '+Number(p[2])}
+
+function buildDays(rows,tz){
+  const days={}
+  for(const r of rows){
+    if(!r.created_at) continue
+    const k=dateKeyTZ(r.created_at,tz)
+    const d=days[k]||(days[k]={rev:0,inv:new Set(),items:{},qty:0})
+    d.rev+=Number(r.total||0); d.inv.add(r.created_at)
+    const nm=(r.item||'').trim()
+    if(nm&&!isExcluded(nm)){ d.items[nm]=(d.items[nm]||0)+Number(r.qty||0); d.qty+=Number(r.qty||0) }
+  }
+  return days
+}
+function topItem(day){let n='—',q=0;for(const k in day.items){if(day.items[k]>q){q=day.items[k];n=k}}return {name:n,qty:q}}
+function computeStats(rows,tz){
+  const days=buildDays(rows,tz)
+  const keys=Object.keys(days).sort()
+  if(keys.length===0) return null
+  const todayK=dateKeyTZ(new Date(),tz)
+  const hasToday=days[todayK]&&days[todayK].rev>0
+  const periodK=hasToday?todayK:keys[keys.length-1]
+  const day=days[periodK]
+  const rev=day.rev, orders=day.inv.size, avg=orders?rev/orders:0, top=topItem(day)
+  const prevK=addDaysKey(periodK,-7)
+  const prevRev=days[prevK]?days[prevK].rev:null
+  let deltaPct=null; if(prevRev&&prevRev>0) deltaPct=((rev-prevRev)/prevRev)*100
+  const series=keys.slice(-12).map(k=>days[k].rev)
+  return {hasToday,periodK,rev,orders,avg,top,deltaPct,series,products:Object.keys(day.items).length,qty:day.qty,lastKey:keys[keys.length-1]}
+}
+function sparkline(series){
+  const w=460,h=88,pad=6,data=series.length?series:[0,0]
+  const max=Math.max(...data,1),min=Math.min(...data,0),span=(max-min)||1,n=data.length
+  const X=i=>n<=1?w/2:pad+i*(w-2*pad)/(n-1), Y=v=>(h-12)-((v-min)/span)*(h-26)
+  let d=''; data.forEach((v,i)=>{d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '})
+  const area=d+`L ${X(n-1).toFixed(1)} ${h} L ${X(0).toFixed(1)} ${h} Z`
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#dca85a" stop-opacity=".30"/><stop offset="1" stop-color="#dca85a" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#g)"/><path d="${d}" fill="none" stroke="#dca85a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+}
+
+/* ---- state + elements ---- */
+let TENANTS=[]            // [{id,name,currency,plan,status,...}]
+let ROWS_BY_ID={}         // restaurant_id -> [rows]
+let STATS_BY_ID={}        // restaurant_id -> computeStats result
+const viewList=document.getElementById('view-list')
+const viewDetail=document.getElementById('view-detail')
+const storeList=document.getElementById('storeList')
+const overviewEl=document.getElementById('overview')
+const listSubtitle=document.getElementById('listSubtitle')
+
+/* optional: open the live franchisee app for known stores */
+const STORE_APP={ 3:'boracay.html' }
+
+async function load(){
+  try{
+    const t = await supabase.from('tenants').select('*').order('id',{ascending:true})
+    if(t.error) throw t.error
+    TENANTS = t.data || []
+
+    const s = await supabase.from('sales_recorder')
+      .select('item, qty, total, restaurant_id, created_at')
+      .order('created_at',{ascending:false}).limit(8000)
+    if(s.error) throw s.error
+    ROWS_BY_ID={}
+    for(const r of (s.data||[])){
+      (ROWS_BY_ID[r.restaurant_id]=ROWS_BY_ID[r.restaurant_id]||[]).push(r)
+    }
+    for(const t of TENANTS){
+      STATS_BY_ID[t.id]=computeStats(ROWS_BY_ID[t.id]||[], curOf(t.currency).tz)
+    }
+    renderList()
+  }catch(err){
+    storeList.innerHTML='<div class="err">'+JSON.stringify(err,null,2)+'</div>'
+    listSubtitle.textContent='Could not load your network'
+  }
+}
+
+function renderOverview(){
+  const total=TENANTS.length
+  const active=TENANTS.filter(t=>(t.status||'').toLowerCase()==='active').length
+  const trial=TENANTS.filter(t=>(t.status||'').toLowerCase()==='trial').length
+  overviewEl.innerHTML=`
+    <div class="ov-item rise"><div class="ov-num">${total}</div><div class="ov-lbl">Stores</div></div>
+    <div class="ov-item rise" style="animation-delay:.05s"><div class="ov-num">${active}</div><div class="ov-lbl">Active</div></div>
+    <div class="ov-item rise" style="animation-delay:.1s"><div class="ov-num">${trial}</div><div class="ov-lbl">On trial</div></div>`
+}
+
+function renderList(){
+  listSubtitle.textContent=`${TENANTS.length} restaurant${TENANTS.length===1?'':'s'} on FranchiseOS`
+  renderOverview()
+  if(TENANTS.length===0){
+    storeList.innerHTML='<div class="emptyhint">No restaurants yet.<br>Add your first tenant in the database to see it here.</div>'
+    return
+  }
+  storeList.innerHTML = TENANTS.map((t,i)=>{
+    const c=curOf(t.currency), s=STATS_BY_ID[t.id]
+    const plan=(t.plan||'trial').toLowerCase(), status=(t.status||'active').toLowerCase()
+    const rev = s ? money(s.rev,c) : '—'
+    const orders = s ? s.orders : '—'
+    const last = s ? prettyDay(s.lastKey) : 'no sales'
+    return `<button class="store-card rise" data-id="${t.id}" style="animation-delay:${(i*.05).toFixed(2)}s">
+      <div class="store-arrow">›</div>
+      <div class="store-top">
+        <div class="store-name">${t.name||('Store #'+t.id)}</div>
+        <span class="badge plan-${plan}">${plan}</span>
+      </div>
+      <div class="store-meta">
+        <span class="status ${status}"><i></i>${status.charAt(0).toUpperCase()+status.slice(1)}</span>
+        <span>·</span><span>${t.currency||''}</span>
+      </div>
+      <div class="store-stats">
+        <div><div class="sv">${rev}</div><div class="sl">latest day</div></div>
+        <div><div class="sv">${orders}</div><div class="sl">orders</div></div>
+        <div><div class="sv">${last}</div><div class="sl">last active</div></div>
+      </div>
+    </button>`
+  }).join('')
+  storeList.querySelectorAll('.store-card').forEach(btn=>{
+    btn.onclick=()=>openStore(Number(btn.dataset.id))
+  })
+}
+
+function footMut(txt){return `<div class="foot mut">${txt}</div>`}
+
+function openStore(id){
+  const t=TENANTS.find(x=>x.id===id); if(!t) return
+  const c=curOf(t.currency), s=STATS_BY_ID[id]
+  document.getElementById('detailName').innerHTML=t.name||('Store #'+id)
+  const planTxt=(t.plan||'trial')+' plan · '+(t.status||'active')
+  document.getElementById('detailSubtitle').textContent=planTxt+' · '+(t.currency||'')
+
+  const dc=document.getElementById('detailContent')
+  if(!s){
+    dc.innerHTML=`<div class="insight"><div class="spk">✦</div><div class="body">No sales recorded yet for this store. Once the POS logs sales, performance will show here.</div></div>`
+      + appLink(id)
+  }else{
+    const wd=new Date(s.periodK+'T00:00:00Z').getUTCDay()
+    const cap=s.hasToday?'NET REVENUE · TODAY':'NET REVENUE · '+prettyDay(s.periodK).toUpperCase()
+    let deltaHtml=`<div class="delta flat">— first period on record</div>`
+    if(s.deltaPct!=null){const up=s.deltaPct>=0;deltaHtml=`<div class="delta ${up?'up':'down'}">${up?'▲':'▼'} ${Math.abs(s.deltaPct).toFixed(1)}% vs ${dayName[wd].slice(0,3)} last week</div>`}
+    const insights=[]
+    if(s.deltaPct!=null){const up=s.deltaPct>=0
+      insights.push(`Latest day net is <b>${money(s.rev,c)}</b>, <span class="hi">${up?'up':'down'} ${Math.abs(s.deltaPct).toFixed(0)}%</span> vs the same day last week.`)}
+    else insights.push(`Latest day net is <b>${money(s.rev,c)}</b> across <b>${s.orders}</b> order${s.orders===1?'':'s'}.`)
+    if(s.top&&s.top.qty) insights.push(`Top seller is <b>${s.top.name}</b> (<span class="hi">${s.top.qty} sold</span>).`)
+    dc.innerHTML=`
+      <div class="hero rise">
+        <div class="cap"><span class="dot"></span>${cap}</div>
+        <div class="big"><span class="cur">${c.sym.trim()}</span>${Number(s.rev).toLocaleString('en-US',{minimumFractionDigits:c.dec,maximumFractionDigits:c.dec})}</div>
+        ${deltaHtml}${sparkline(s.series)}
+      </div>
+      <div class="grid">
+        <div class="stat rise" style="animation-delay:.04s"><div class="lbl">Orders</div><div class="num">${s.orders}</div>${footMut('latest day')}</div>
+        <div class="stat rise" style="animation-delay:.08s"><div class="lbl">Avg ticket</div><div class="num">${s.orders?money(s.avg,c):'—'}</div>${footMut('per order')}</div>
+        <div class="stat rise" style="animation-delay:.12s"><div class="lbl">Items sold</div><div class="num">${s.qty}</div>${footMut(s.products+' product'+(s.products===1?'':'s'))}</div>
+        <div class="stat rise" style="animation-delay:.16s"><div class="lbl">Top item</div><div class="num sm">${s.top.qty?s.top.name:'—'}</div>${footMut(s.top.qty?s.top.qty+' sold':'&nbsp;')}</div>
+      </div>
+      ${insights.map(t=>`<div class="insight rise"><div class="spk">✦</div><div class="body">${t}</div></div>`).join('')}
+      ${appLink(id)}`
+  }
+  viewList.classList.remove('active'); viewDetail.classList.add('active'); window.scrollTo(0,0)
+}
+function appLink(id){
+  return STORE_APP[id] ? `<a class="openapp" href="${STORE_APP[id]}">Open live app →</a>` : ''
+}
+
+document.getElementById('backBtn').onclick=()=>{
+  viewDetail.classList.remove('active'); viewList.classList.add('active'); window.scrollTo(0,0)
+}
+
+load()
+</script>
+</body>
+</html>
