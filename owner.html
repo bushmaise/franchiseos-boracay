@@ -106,6 +106,25 @@
   .err{background:#2a1512;border:1px solid #5a2a22;color:#f0b8aa;border-radius:14px;padding:14px;font-size:12.5px;white-space:pre-wrap;line-height:1.5;}
   .emptyhint{color:var(--muted2);text-align:center;padding:30px 10px;font-size:14px;line-height:1.6;}
 
+  .topbar .right{display:flex;align-items:center;gap:10px;}
+  .logout{background:rgba(150,190,160,.08);border:1px solid var(--line2);color:var(--muted);
+    font-family:inherit;font-size:12px;font-weight:700;padding:8px 13px;border-radius:999px;cursor:pointer;letter-spacing:.3px;}
+  .logout:hover{color:var(--cream);}
+
+  .login-wrap{min-height:60vh;display:flex;align-items:center;justify-content:center;}
+  .login-card{width:100%;max-width:380px;background:linear-gradient(160deg,var(--panel2),var(--bg2));
+    border:1px solid var(--line);border-radius:24px;padding:30px 26px 28px;}
+  .login-title{font-family:'Fraunces',serif;font-size:28px;font-weight:600;letter-spacing:-.4px;margin-bottom:5px;text-align:center;}
+  .login-title em{font-style:italic;color:var(--gold);}
+  .login-sub{color:var(--muted);font-size:13.5px;font-weight:500;text-align:center;margin-bottom:22px;}
+  .login-card input{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:13px;
+    padding:15px 16px;color:var(--cream);font-family:inherit;font-size:15px;margin-bottom:12px;outline:none;}
+  .login-card input:focus{border-color:var(--gold);}
+  .login-card button{width:100%;padding:16px;border:none;border-radius:13px;background:var(--green);color:#fff;
+    font-family:inherit;font-size:16px;font-weight:800;cursor:pointer;margin-top:4px;}
+  .login-card button:disabled{background:#243a2e;color:#5e7567;cursor:default;}
+  .login-err{color:var(--down);font-size:13px;font-weight:600;text-align:center;margin-top:13px;min-height:18px;line-height:1.4;}
+
   .view{display:none;}.view.active{display:block;}
   .rise{opacity:0;transform:translateY(14px);animation:rise .5s cubic-bezier(.2,.7,.3,1) forwards;}
   @keyframes rise{to{opacity:1;transform:none;}}
@@ -119,11 +138,28 @@
       <div class="logo"><i></i><i></i><i></i></div>
       <div class="name">Franchise<em>OS</em></div>
     </div>
-    <span class="ownerpill">● Owner Console</span>
+    <div class="right" id="topRight" hidden>
+      <span class="ownerpill">● Owner Console</span>
+      <button class="logout" id="logoutBtn">Sign out</button>
+    </div>
+  </div>
+
+  <!-- VIEW: login -->
+  <div class="view active" id="view-login">
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="login-title">Owner <em>sign in</em></div>
+        <div class="login-sub">Sign in to manage your restaurants</div>
+        <input id="loginEmail" type="email" placeholder="Email" autocomplete="username">
+        <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password">
+        <button id="loginBtn">Sign in</button>
+        <div class="login-err" id="loginErr"></div>
+      </div>
+    </div>
   </div>
 
   <!-- VIEW: all stores -->
-  <div class="view active" id="view-list">
+  <div class="view" id="view-list">
     <div class="h1">Your <em>stores</em></div>
     <div class="subtitle" id="listSubtitle">Loading your network…</div>
     <div class="ov" id="overview"></div>
@@ -333,7 +369,60 @@ document.getElementById('backBtn').onclick=()=>{
   viewDetail.classList.remove('active'); viewList.classList.add('active'); window.scrollTo(0,0)
 }
 
-load()
+/* ---------- AUTH GATE ---------- */
+const viewLogin=document.getElementById('view-login')
+const topRight=document.getElementById('topRight')
+const loginBtn=document.getElementById('loginBtn')
+const loginErr=document.getElementById('loginErr')
+const emailEl=document.getElementById('loginEmail')
+const passEl=document.getElementById('loginPass')
+
+function showLogin(msg){
+  viewList.classList.remove('active'); viewDetail.classList.remove('active')
+  viewLogin.classList.add('active'); topRight.hidden=true
+  loginErr.textContent=msg||''
+}
+function showConsole(){
+  viewLogin.classList.remove('active'); viewDetail.classList.remove('active')
+  viewList.classList.add('active'); topRight.hidden=false
+}
+
+async function checkAccess(){
+  const { data:{ session } } = await supabase.auth.getSession()
+  if(!session){ showLogin(); return }
+  const { data:prof, error } = await supabase.from('profiles')
+    .select('role, full_name').eq('id', session.user.id).maybeSingle()
+  if(error){ showLogin('Could not verify your account — try again.'); return }
+  if(!prof || prof.role!=='super_admin'){
+    await supabase.auth.signOut()
+    showLogin('This account is not an owner. Access denied.')
+    return
+  }
+  showConsole(); load()
+}
+
+async function doLogin(){
+  const email=emailEl.value.trim(), pass=passEl.value
+  if(!email||!pass){ loginErr.textContent='Enter your email and password.'; return }
+  loginBtn.disabled=true; loginBtn.textContent='Signing in…'; loginErr.textContent=''
+  const { error } = await supabase.auth.signInWithPassword({ email, password:pass })
+  loginBtn.disabled=false; loginBtn.textContent='Sign in'
+  if(error){ loginErr.textContent='Wrong email or password.'; return }
+  passEl.value=''
+  checkAccess()
+}
+loginBtn.onclick=doLogin
+passEl.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin() })
+emailEl.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin() })
+
+document.getElementById('logoutBtn').onclick=async()=>{
+  await supabase.auth.signOut()
+  TENANTS=[]; STATS_BY_ID={}; ROWS_BY_ID={}
+  emailEl.value=''; passEl.value=''
+  showLogin()
+}
+
+checkAccess()
 </script>
 </body>
 </html>
