@@ -99,8 +99,10 @@
   .insight .body{font-size:14.5px;line-height:1.55;color:#dfe7df;}
   .insight .body b{color:var(--cream);font-weight:700;}.insight .body .hi{color:var(--gold2);font-weight:700;}
 
-  .openapp{display:inline-flex;align-items:center;gap:8px;margin-top:6px;text-decoration:none;
+  .appbtns{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
+  .openapp{flex:1 1 150px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;
     background:var(--green);color:#fff;font-weight:800;font-size:15px;padding:14px 20px;border-radius:14px;}
+  .openapp.alt{background:rgba(220,168,90,.12);color:var(--gold2);border:1px solid rgba(220,168,90,.35);}
 
   .loading{padding:70px 0;text-align:center;color:var(--muted);font-size:15px;}
   .err{background:#2a1512;border:1px solid #5a2a22;color:#f0b8aa;border-radius:14px;padding:14px;font-size:12.5px;white-space:pre-wrap;line-height:1.5;}
@@ -368,7 +370,10 @@ function openStore(id){
   viewList.classList.remove('active'); viewDetail.classList.add('active'); window.scrollTo(0,0)
 }
 function appLink(id){
-  return STORE_APP[id] ? `<a class="openapp" href="${STORE_APP[id]}">Open live app →</a>` : ''
+  return `<div class="appbtns">
+    <a class="openapp" href="boracay.html?store=${id}">Open POS →</a>
+    <a class="openapp alt" href="menu-admin.html?store=${id}">Manage menu</a>
+  </div>`
 }
 
 document.getElementById('backBtn').onclick=()=>{
