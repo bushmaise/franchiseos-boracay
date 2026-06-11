@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Menu Manager — Falafel Boracay</title>
+<title>Menu Manager</title>
 <meta name="theme-color" content="#0a1712">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -147,7 +147,7 @@
       <div class="logo"><i></i><i></i><i></i></div>
       <div class="name">Franchise<em>OS</em></div>
     </div>
-    <div class="storepill"><span class="dot"></span>Falafel Boracay</div>
+    <div class="storepill"><span class="dot"></span><span id="storeName">…</span></div>
   </div>
 
   <div class="h1">Your <em>menu</em></div>
@@ -170,7 +170,7 @@
 
   <div class="row2">
     <div class="field">
-      <label>Price (₱)</label>
+      <label id="priceLabel">Price</label>
       <input id="fPrice" type="number" inputmode="numeric" placeholder="260">
     </div>
     <div class="field">
@@ -213,8 +213,16 @@ const supabase = createClient(
   'https://dzvfimkpcnexpihhfvpf.supabase.co',
   'sb_publishable_R0ONHQwxbn7ommQim6L97w_TsdLE7-_'
 )
-const RESTAURANT_ID = 3
-const CUR = { sym:'₱' }
+let STORE_ID = null
+let STORE_NAME = ''
+let CUR = { sym:'', dec:0 }
+const CUR_PRESET = {
+  KWD:{ sym:'KD ', dec:3 },
+  PHP:{ sym:'₱',   dec:0 },
+  USD:{ sym:'$',   dec:2 },
+  AED:{ sym:'AED ',dec:2 },
+  SAR:{ sym:'SAR ',dec:2 }
+}
 const EMOJIS = ['🥙','🌯','🍽️','🥣','🧆','🍗','🥗','🍚','🥤','🍟','🫓','🧀','🥚','🌮','🍛','🥘']
 
 const $ = id => document.getElementById(id)
@@ -223,7 +231,7 @@ const fName=$('fName'), fPrice=$('fPrice'), fCat=$('fCat'), fEmoji=$('fEmoji'), 
 const delBtn=$('delBtn'), saveBtn=$('saveBtn'), sheetTitle=$('sheetTitle'), toast=$('toast'), catList=$('catList'), emojiPick=$('emojiPick')
 
 let items=[], editingId=null
-const money = n => CUR.sym + Number(n||0).toLocaleString('en-US')
+const money = n => CUR.sym + Number(n||0).toLocaleString('en-US',{minimumFractionDigits:CUR.dec,maximumFractionDigits:CUR.dec})
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
 
 function showToast(msg, bad){
@@ -244,7 +252,7 @@ async function load(){
   try{
     const { data, error } = await supabase
       .from('menu_items').select('*')
-      .eq('restaurant_id', RESTAURANT_ID)
+      .eq('restaurant_id', STORE_ID)
       .order('category',{ascending:true})
       .order('sort_order',{ascending:true})
       .order('name',{ascending:true})
@@ -316,7 +324,7 @@ saveBtn.onclick=async()=>{
   if(!name){ showToast('Enter a name',true); return }
   if(isNaN(price)){ showToast('Enter a price',true); return }
   const row={
-    restaurant_id:RESTAURANT_ID, name, price,
+    restaurant_id:STORE_ID, name, price,
     category:fCat.value.trim()||null,
     emoji:fEmoji.value.trim()||'🍽️',
     image_url:fImg.value.trim()||null,
@@ -349,7 +357,20 @@ delBtn.onclick=async()=>{
 }
 
 /* ---------- AUTH GATE ---------- */
-const STORE_ID = RESTAURANT_ID
+const storeNameEl=document.getElementById('storeName')
+const priceLabelEl=document.getElementById('priceLabel')
+function applyStore(meta){
+  STORE_ID = meta.id
+  STORE_NAME = meta.name || ('Store '+meta.id)
+  CUR = CUR_PRESET[meta.currency] || { sym:'', dec:0 }
+  document.title = 'Menu Manager — '+STORE_NAME
+  if(storeNameEl) storeNameEl.textContent = STORE_NAME
+  if(priceLabelEl) priceLabelEl.textContent = 'Price'+(CUR.sym.trim()?' ('+CUR.sym.trim()+')':'')
+}
+async function loadStoreMeta(id){
+  const { data } = await supabase.from('tenants').select('id, name, currency').eq('id', id).maybeSingle()
+  return data || { id, name:'Store '+id, currency:null }
+}
 const agGate=document.getElementById('authGate')
 const agSignout=document.getElementById('agSignout')
 const agBtn=document.getElementById('agBtn')
@@ -365,8 +386,22 @@ async function agCheck(){
   if(!session){ agShowLogin(); return }
   const { data:prof, error } = await supabase.from('profiles').select('role, restaurant_id').eq('id', session.user.id).maybeSingle()
   if(error){ agShowLogin('Could not verify your account — try again.'); return }
-  const ok = prof && (prof.role==='super_admin' || prof.restaurant_id===STORE_ID)
-  if(!ok){ await supabase.auth.signOut(); agShowLogin('This account cannot edit this menu.'); return }
+  if(!prof){ await supabase.auth.signOut(); agShowLogin('This account has no profile.'); return }
+  let storeId = null
+  const qStore = parseInt(new URL(location.href).searchParams.get('store')||'',10)
+  if(prof.role==='super_admin'){
+    if(!isNaN(qStore)) storeId = qStore
+    else if(prof.restaurant_id) storeId = prof.restaurant_id
+    else {
+      const { data:firstT } = await supabase.from('tenants').select('id').order('id',{ascending:true}).limit(1).maybeSingle()
+      storeId = firstT ? firstT.id : null
+    }
+  } else {
+    storeId = prof.restaurant_id   // owner/staff: always their own store
+  }
+  if(!storeId){ await supabase.auth.signOut(); agShowLogin('No store assigned to this account.'); return }
+  const meta = await loadStoreMeta(storeId)
+  applyStore(meta)
   agShowApp()
 }
 async function agLogin(){
