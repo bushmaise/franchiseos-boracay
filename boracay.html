@@ -81,7 +81,7 @@
     display:flex;align-items:center;justify-content:center;overflow:hidden;}
   .item-btn .thumb .emoji{font-size:64px;line-height:1;}
   .item-btn .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-  .item-btn .name{font-size:16px;font-weight:700;line-height:1.25;margin-top:12px;padding:0 8px;}
+  .item-btn .name{font-size:16px;font-weight:800;line-height:1.25;margin-top:12px;padding:0 8px;color:#ffffff;}
   .item-btn .price{font-size:15px;color:var(--gold2);font-weight:800;margin-top:4px;}
 
   .cart{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);width:100%;max-width:460px;
@@ -411,6 +411,8 @@ function renderCart(){
     names.map(n=>{const c=cart[n],safe=n.replace(/'/g,"\\'");return `<div class="cart-line"><span>${n} — ${money(c.price*c.qty)}</span><span class="ctrl"><button onclick="window._dec('${safe}')">−</button><b>${c.qty}</b><button onclick="window._inc('${safe}')">+</button></span></div>`}).join('')
   let total=0,items=0; names.forEach(n=>{total+=cart[n].price*cart[n].qty;items+=cart[n].qty})
   totalEl.textContent=money(total); countEl.textContent=items+(items===1?' item':' items'); confirmBtn.disabled=items===0
+  const posActive=document.getElementById('view-pos').classList.contains('active')
+  cartEl.classList.toggle('show', posActive && names.length>0)
 }
 confirmBtn.onclick=async()=>{
   confirmBtn.disabled=true; confirmBtn.textContent='Saving...'
@@ -429,7 +431,7 @@ confirmBtn.onclick=async()=>{
 function switchView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active', el.id==='view-'+v))
   document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active', a.dataset.view===v))
-  cartEl.classList.toggle('show', v==='pos')
+  cartEl.classList.toggle('show', v==='pos' && Object.keys(cart).length>0)
   window.scrollTo(0,0)
 }
 document.querySelectorAll('.nav a').forEach(a=>a.onclick=()=>switchView(a.dataset.view))
