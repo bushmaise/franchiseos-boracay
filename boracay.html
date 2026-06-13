@@ -86,8 +86,17 @@
 
   .cart{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);width:100%;max-width:460px;
     background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:22px 22px 0 0;
-    padding:14px 18px;box-shadow:0 -10px 30px rgba(0,0,0,.4);max-height:60vh;overflow-y:auto;display:none;}
+    box-shadow:0 -10px 30px rgba(0,0,0,.4);display:none;overflow:hidden;}
   .cart.show{display:block;}
+  .cart-bar{width:100%;border:none;background:none;color:var(--cream);font-family:inherit;cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;padding:15px 18px;font-size:15px;font-weight:800;}
+  .cart-bar .cnt{color:var(--cream);text-transform:uppercase;letter-spacing:.5px;font-size:13px;}
+  .cart-bar .rt{display:flex;align-items:center;gap:12px;font-family:'Fraunces',serif;font-size:20px;color:var(--cream);}
+  .cart-chev{font-size:12px;color:var(--gold2);transition:transform .2s;}
+  .cart.open .cart-chev{transform:rotate(180deg);}
+  .cart-body{display:none;padding:0 18px 16px;}
+  .cart.open .cart-body{display:block;}
+  #cartLines{max-height:38vh;overflow-y:auto;}
   .cart-title{font-size:13px;font-weight:800;margin-bottom:6px;display:flex;justify-content:space-between;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
   .cart-line{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:15px;border-bottom:1px solid var(--line);}
   .cart-line:last-child{border-bottom:none;}
@@ -184,10 +193,14 @@
 </div>
 
 <div class="cart" id="cart">
-  <div class="cart-title"><span>Order</span><span id="count">0 items</span></div>
-  <div id="cartLines"><div class="empty">No items yet</div></div>
-  <div class="total-row"><span>Total</span><span id="total">₱0</span></div>
-  <button class="confirm-btn" id="confirmBtn" disabled>Confirm Sale (Cash)</button>
+  <button class="cart-bar" id="cartBar">
+    <span class="cnt" id="count">0 items</span>
+    <span class="rt"><span id="total">₱0</span><span class="cart-chev">▴</span></span>
+  </button>
+  <div class="cart-body" id="cartBody">
+    <div id="cartLines"><div class="empty">No items yet</div></div>
+    <button class="confirm-btn" id="confirmBtn" disabled>Confirm Sale (Cash)</button>
+  </div>
 </div>
 
 <div class="toast" id="toast">✅ Sale saved</div>
@@ -373,6 +386,9 @@ const cartLines=document.getElementById('cartLines')
 const totalEl=document.getElementById('total')
 const countEl=document.getElementById('count')
 const confirmBtn=document.getElementById('confirmBtn')
+const cartBar=document.getElementById('cartBar')
+let cartOpen=false
+cartBar.onclick=()=>{ cartOpen=!cartOpen; cartEl.classList.toggle('open',cartOpen); syncCart() }
 
 async function loadMenu(){
   posGrid.innerHTML='<div class="empty" style="grid-column:1/-1;text-align:center;padding:30px 0;opacity:.6">Loading menu…</div>'
@@ -411,6 +427,7 @@ function renderCart(){
     names.map(n=>{const c=cart[n],safe=n.replace(/'/g,"\\'");return `<div class="cart-line"><span>${n} — ${money(c.price*c.qty)}</span><span class="ctrl"><button onclick="window._dec('${safe}')">−</button><b>${c.qty}</b><button onclick="window._inc('${safe}')">+</button></span></div>`}).join('')
   let total=0,items=0; names.forEach(n=>{total+=cart[n].price*cart[n].qty;items+=cart[n].qty})
   totalEl.textContent=money(total); countEl.textContent=items+(items===1?' item':' items'); confirmBtn.disabled=items===0
+  if(names.length===0){ cartOpen=false; cartEl.classList.remove('open') }
   syncCart()
 }
 function syncCart(){
