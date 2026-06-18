@@ -142,6 +142,31 @@
   .signout{position:fixed;top:14px;right:14px;z-index:60;background:rgba(150,190,160,.08);border:1px solid var(--line2);
     color:var(--muted);font-family:inherit;font-size:11px;font-weight:700;padding:7px 12px;border-radius:999px;cursor:pointer;}
   .signout[hidden]{display:none;}
+
+  /* ===== AI Advisor chat ===== */
+  .ai-wrap{margin-top:20px;background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:20px;padding:16px 16px 14px;}
+  .ai-wrap .ai-title{font-family:'Fraunces',serif;font-size:19px;font-weight:600;margin-bottom:2px;}
+  .ai-wrap .ai-title em{font-style:italic;color:var(--gold);}
+  .ai-wrap .ai-sub{color:var(--muted);font-size:12.5px;margin-bottom:13px;}
+  .ai-log{display:flex;flex-direction:column;gap:10px;max-height:46vh;overflow-y:auto;margin-bottom:12px;padding-right:2px;}
+  .ai-log:empty{display:none;margin:0;}
+  .ai-msg{max-width:88%;padding:11px 14px;border-radius:16px;font-size:14.5px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;}
+  .ai-msg.user{align-self:flex-end;background:var(--green);color:#fff;border-bottom-right-radius:5px;}
+  .ai-msg.bot{align-self:flex-start;background:var(--panel);border:1px solid var(--line);color:#dfe7df;border-bottom-left-radius:5px;}
+  .ai-msg.think{color:var(--muted2);font-style:italic;}
+  .ai-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+  .ai-chip{background:rgba(115,217,154,.08);border:1px solid var(--line2);color:var(--cream);font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:999px;cursor:pointer;}
+  .ai-chip:active{transform:scale(.96);}
+  .ai-bar{display:flex;align-items:center;gap:8px;}
+  .ai-bar input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line2);border-radius:13px;padding:13px 14px;color:var(--cream);font-family:inherit;font-size:14.5px;outline:none;}
+  .ai-bar input:focus{border-color:var(--gold);}
+  .ai-ico{width:46px;height:46px;flex:none;border:none;border-radius:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .ai-ico:active{transform:scale(.94);}
+  .ai-mic{background:rgba(115,217,154,.10);color:var(--gold2);}
+  .ai-mic.rec{background:var(--down);color:#fff;animation:aipulse 1s infinite;}
+  @keyframes aipulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .ai-send{background:var(--green);color:#fff;}
+  .ai-send:disabled{background:#243a2e;color:#5e7567;}
 </style>
 
 <!-- ===== Installable app (PWA) settings — added by FranchiseOS ===== -->
@@ -189,8 +214,24 @@
 
   <div class="view" id="view-advisor">
     <div class="h1">Your <em>advisor</em></div>
-    <div class="subtitle">Smart tips from today's numbers</div>
+    <div class="subtitle">Smart tips from your numbers — and ask anything</div>
     <div id="advisorContent"><div class="loading">Reading your day…</div></div>
+
+    <div class="ai-wrap">
+      <div class="ai-title">Ask your <em>advisor</em></div>
+      <div class="ai-sub">Type or tap the mic 🎤 — answers are read aloud</div>
+      <div class="ai-log" id="aiLog"></div>
+      <div class="ai-chips" id="aiChips">
+        <button class="ai-chip" data-q="How did the shop do today?">How did today go?</button>
+        <button class="ai-chip" data-q="What should I promote to sell more?">What should I promote?</button>
+        <button class="ai-chip" data-q="Give me one practical tip to raise my average ticket.">Boost my ticket</button>
+      </div>
+      <div class="ai-bar">
+        <input id="aiInput" type="text" placeholder="Ask anything about your shop…" autocomplete="off">
+        <button class="ai-ico ai-mic" id="aiMic" title="Speak" aria-label="Speak">🎤</button>
+        <button class="ai-ico ai-send" id="aiSend" title="Send" aria-label="Send">➤</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -377,7 +418,6 @@ function insightsHtml(s,expanded){
   if(expanded){
     if(s.orders) list.push(`Average ticket is <b>${money(s.avg)}</b>. Try bundling the top seller with a drink to nudge it higher.`)
     if(s.ordDelta!=null&&s.ordDelta!==0){const up=s.ordDelta>0;list.push(`Order count is <b>${up?'above':'below'} your daily average</b> (${(up?'+':'')+s.ordDelta}). ${up?'Make sure staffing matches the demand.':'A lighter day — good time for prep and cleaning.'}`)}
-    list.push(`Want an AI advisor you can ask anything about the shop? That's the next upgrade coming to FranchiseOS.`)
   }
   return list.map(t=>`<div class="insight rise"><div class="spk">✦</div><div class="body">${t}</div></div>`).join('')
 }
@@ -464,6 +504,113 @@ document.querySelectorAll('.nav a').forEach(a=>a.onclick=()=>switchView(a.datase
 
 renderCart()
 
+/* ---------- AI ADVISOR (live · voice in & out) ---------- */
+const aiLog     = document.getElementById('aiLog')
+const aiInput   = document.getElementById('aiInput')
+const aiSendBtn = document.getElementById('aiSend')
+const aiMicBtn  = document.getElementById('aiMic')
+const aiChips   = document.getElementById('aiChips')
+let aiHistory = []
+let aiBusy = false
+
+function aiClean(t){
+  return String(t||'')
+    .replace(/```[\s\S]*?```/g,' ')
+    .replace(/[#*_`>]/g,'')
+    .replace(/\n{3,}/g,'\n\n')
+    .trim()
+}
+function aiContext(){
+  const s = lastStats
+  let c = `You are the AI business advisor built into FranchiseOS, helping the owner and staff of "${STORE_NAME||'this restaurant'}", a small restaurant. Money is in ${STORE_CURRENCY}.`
+  if(s && s.orders){
+    c += ` Latest day on record: net revenue ${money(s.rev)}, ${s.orders} order(s), average ticket ${money(s.avg)}, ${s.qty} items sold across ${s.products} product(s). Top seller: ${s.top&&s.top.qty?s.top.name+' ('+s.top.qty+' sold)':'n/a'}.`
+    if(s.deltaPct!=null) c += ` Revenue is ${s.deltaPct>=0?'up':'down'} ${Math.abs(s.deltaPct).toFixed(0)}% versus the same day last week.`
+  } else {
+    c += ` No sales have been recorded yet.`
+  }
+  c += ` Reply in plain, warm, conversational English. Do NOT use markdown, asterisks, headers, or bullet lists. Keep it short: 2 to 4 sentences, practical and specific to a small restaurant. If a question needs data you do not have, give a sensible general tip and mention what number would help.`
+  return c
+}
+function aiBubble(role, text){
+  const d = document.createElement('div')
+  d.className = 'ai-msg ' + (role==='user'?'user':'bot')
+  d.textContent = text
+  aiLog.appendChild(d)
+  aiLog.scrollTop = aiLog.scrollHeight
+  return d
+}
+function aiSpeak(text){
+  try{
+    if(!('speechSynthesis' in window)) return
+    window.speechSynthesis.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    u.lang='en-US'; u.rate=1; u.pitch=1
+    window.speechSynthesis.speak(u)
+  }catch(e){}
+}
+async function aiAsk(text){
+  if(aiBusy || !text.trim()) return
+  aiBusy=true; aiSendBtn.disabled=true
+  if(aiChips) aiChips.style.display='none'
+  aiBubble('user', text)
+  aiHistory.push({ role:'user', content:text })
+  const thinking = aiBubble('bot','…'); thinking.classList.add('think')
+  try{
+    const res = await fetch('/api/advisor',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ system: aiContext(), messages: aiHistory })
+    })
+    const data = await res.json()
+    let reply=''
+    if(data && Array.isArray(data.content)){
+      reply = data.content.filter(b=>b&&b.type==='text').map(b=>b.text).join('\n').trim()
+    }
+    if(!reply){
+      const em = (data && data.error) ? (data.error.message||JSON.stringify(data.error)) : 'No response received.'
+      reply = 'Sorry, I could not answer that right now. ('+em+')'
+    }
+    const clean = aiClean(reply)
+    thinking.classList.remove('think'); thinking.textContent = clean
+    aiHistory.push({ role:'assistant', content:reply })
+    aiLog.scrollTop = aiLog.scrollHeight
+    aiSpeak(clean)
+  }catch(err){
+    thinking.classList.remove('think'); thinking.textContent = 'Connection problem — please try again.'
+  }
+  aiBusy=false; aiSendBtn.disabled=false
+}
+function aiSubmit(){
+  const t = aiInput.value.trim()
+  if(!t) return
+  aiInput.value=''
+  aiAsk(t)
+}
+if(aiSendBtn) aiSendBtn.onclick = aiSubmit
+if(aiInput) aiInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); aiSubmit() } })
+if(aiChips){
+  aiChips.querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{ aiInput.value = b.dataset.q || b.textContent; aiSubmit() }
+  })
+}
+/* voice input */
+let aiRec=null
+if(aiMicBtn){
+  aiMicBtn.onclick=()=>{
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if(!SR){ alert('Voice input is not supported in this browser. Please type your question instead.'); return }
+    if(aiRec){ try{aiRec.stop()}catch(e){}; aiRec=null; return }
+    aiRec = new SR()
+    aiRec.lang='en-US'; aiRec.interimResults=false; aiRec.maxAlternatives=1
+    aiMicBtn.classList.add('rec')
+    aiRec.onresult=e=>{ aiInput.value = e.results[0][0].transcript; aiSubmit() }
+    aiRec.onerror=()=>{}
+    aiRec.onend=()=>{ aiMicBtn.classList.remove('rec'); aiRec=null }
+    try{ aiRec.start() }catch(e){ aiMicBtn.classList.remove('rec'); aiRec=null }
+  }
+}
+
 /* ---------- AUTH GATE ---------- */
 async function loadStoreMeta(id){
   const { data, error } = await supabase.from('tenants').select('name, currency').eq('id', id).maybeSingle()
@@ -518,54 +665,5 @@ agEmail.addEventListener('keydown',e=>{ if(e.key==='Enter') agLogin() })
 agSignout.onclick=async()=>{ await supabase.auth.signOut(); agEmail.value=''; agPass.value=''; agShowLogin() }
 agCheck()
 </script>
-  <!-- ===== AI Advisor ===== -->
-<div id="ai-advisor-btn" onclick="aiAdvisorToggle()">💡 AI Advisor</div>
-<div id="ai-advisor-panel">
-  <div id="ai-advisor-header">AI Advisor <span onclick="aiAdvisorToggle()" style="float:right;cursor:pointer">✕</span></div>
-  <div id="ai-advisor-messages"></div>
-  <div id="ai-advisor-input-row">
-    <input id="ai-advisor-input" type="text" placeholder="Ask about your restaurant..." onkeydown="if(event.key==='Enter')aiAdvisorSend()">
-    <button onclick="aiAdvisorSend()">Send</button>
-  </div>
-</div>
-<style>
-  #ai-advisor-btn{position:fixed;bottom:20px;right:20px;background:#1a5d3a;color:#fff;padding:12px 18px;border-radius:30px;cursor:pointer;font-family:sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:99999}
-  #ai-advisor-panel{position:fixed;bottom:80px;right:20px;width:330px;max-width:90vw;height:440px;max-height:70vh;background:#fff;border-radius:12px;display:none;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.25);z-index:99999;overflow:hidden;font-family:sans-serif}
-  #ai-advisor-header{background:#1a5d3a;color:#fff;padding:12px;font-weight:bold}
-  #ai-advisor-messages{flex:1;overflow-y:auto;padding:12px;font-size:14px;line-height:1.5}
-  .ai-msg-user{text-align:right;margin:8px 0;color:#1a5d3a;font-weight:bold}
-  .ai-msg-bot{text-align:left;margin:8px 0;color:#222;white-space:pre-wrap}
-  #ai-advisor-input-row{display:flex;border-top:1px solid #eee}
-  #ai-advisor-input{flex:1;border:none;padding:12px;outline:none;font-size:14px}
-  #ai-advisor-input-row button{background:#1a5d3a;color:#fff;border:none;padding:0 18px;cursor:pointer}
-</style>
-<script>
-  function aiAdvisorToggle(){var p=document.getElementById('ai-advisor-panel');p.style.display=(p.style.display==='flex')?'none':'flex';}
-  async function aiAdvisorSend(){
-    var input=document.getElementById('ai-advisor-input');
-    var msgs=document.getElementById('ai-advisor-messages');
-    var text=input.value.trim();
-    if(!text)return;
-    msgs.innerHTML+='<div class="ai-msg-user">'+text+'</div>';
-    input.value='';
-    msgs.innerHTML+='<div class="ai-msg-bot" id="ai-thinking">…</div>';
-    msgs.scrollTop=msgs.scrollHeight;
-    try{
-      var res=await fetch('/api/advisor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:text}]})});
-      var data=await res.json();
-      var reply;
-      if(data.content&&data.content[0]&&data.content[0].text){reply=data.content[0].text;}
-      else if(data.error){reply=(typeof data.error==='string')?data.error:(data.error.message||JSON.stringify(data.error));}
-      else{reply='Sorry, something went wrong.';}
-      var t=document.getElementById('ai-thinking');if(t)t.remove();
-      msgs.innerHTML+='<div class="ai-msg-bot">'+reply+'</div>';
-      msgs.scrollTop=msgs.scrollHeight;
-    }catch(e){
-      var t2=document.getElementById('ai-thinking');if(t2)t2.remove();
-      msgs.innerHTML+='<div class="ai-msg-bot">Error: '+e.message+'</div>';
-    }
-  }
-</script>
-<!-- ===== End AI Advisor ===== -->
 </body>
 </html>
