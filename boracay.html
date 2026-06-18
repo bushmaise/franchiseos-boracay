@@ -503,6 +503,11 @@ confirmBtn.onclick=async()=>{
   const { error } = await supabase.from('sales_recorder').insert(rows)
   confirmBtn.textContent='Confirm Sale (Cash)'
   if(error){ alert('Save error:\n'+JSON.stringify(error,null,2)); confirmBtn.disabled=false; return }
+  // deduct recipe ingredients from stock (won't block the sale if it fails)
+  try{
+    const sold = rows.map(r=>({ item:r.item, qty:r.qty }))
+    await supabase.rpc('apply_sale_to_stock', { rid: RESTAURANT_ID, sold })
+  }catch(e){ /* stock deduction is best-effort */ }
   for(const k in cart) delete cart[k]
   renderCart()
   toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),2000)
