@@ -143,6 +143,15 @@
     color:var(--muted);font-family:inherit;font-size:11px;font-weight:700;padding:7px 12px;border-radius:999px;cursor:pointer;}
   .signout[hidden]{display:none;}
 
+  /* ===== Daily Brief ===== */
+  .brief{display:flex;align-items:center;gap:14px;background:linear-gradient(150deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:18px;padding:14px 16px;margin-bottom:16px;}
+  .brief-play{flex:none;width:52px;height:52px;border-radius:50%;border:none;background:var(--gold);color:#1a1206;font-size:21px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .brief-play:active{transform:scale(.94);}
+  .brief-play.busy{background:#243a2e;color:var(--muted2);}
+  .brief-txt{flex:1;min-width:0;}
+  .brief-title{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--gold2);margin-bottom:2px;}
+  .brief-body{font-size:13.5px;line-height:1.5;color:#dfe7df;}
+
   /* ===== AI Advisor chat ===== */
   .ai-wrap{margin-top:20px;background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:20px;padding:16px 16px 14px;}
   .ai-wrap .ai-title{font-family:'Fraunces',serif;font-size:19px;font-weight:600;margin-bottom:2px;}
@@ -203,6 +212,13 @@
   <div class="view active" id="view-home">
     <div class="h1">Today's <em>pulse</em></div>
     <div class="subtitle" id="subtitle">Loading…</div>
+    <div class="brief" id="briefCard">
+      <button class="brief-play" id="briefPlay" aria-label="Play daily brief">▶</button>
+      <div class="brief-txt">
+        <div class="brief-title">Daily brief</div>
+        <div class="brief-body" id="briefBody">Tap play for a 10-second summary of yesterday and what to focus on today.</div>
+      </div>
+    </div>
     <div id="homeContent"><div class="loading">Loading your numbers…</div></div>
   </div>
 
@@ -610,6 +626,39 @@ if(aiMicBtn){
     try{ aiRec.start() }catch(e){ aiMicBtn.classList.remove('rec'); aiRec=null }
   }
 }
+
+/* ---------- DAILY BRIEF (one-tap, spoken) ---------- */
+const briefPlay = document.getElementById('briefPlay')
+const briefBody = document.getElementById('briefBody')
+let briefBusy = false
+async function playBrief(){
+  if(briefBusy) return
+  briefBusy = true
+  briefPlay.classList.add('busy'); briefPlay.textContent='…'
+  briefBody.textContent = 'Preparing your brief…'
+  const sys = aiContext() + ' The owner just tapped "Daily Brief". Give a spoken summary they can hear in about 10 seconds: 2 to 3 short sentences only. First, how the latest day went (net revenue and the top seller). Then ONE clear, specific thing to focus on today. Warm and natural, plain English, no markdown.'
+  try{
+    const res = await fetch('/api/advisor',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ system: sys, messages:[{ role:'user', content:'Give me my daily brief.' }] })
+    })
+    const data = await res.json()
+    let txt=''
+    if(data && Array.isArray(data.content)) txt = data.content.filter(b=>b&&b.type==='text').map(b=>b.text).join('\n').trim()
+    if(!txt){
+      const em = (data && data.error) ? (data.error.message||JSON.stringify(data.error)) : 'no response'
+      txt = 'Could not load the brief right now ('+em+').'
+    }
+    const clean = aiClean(txt)
+    briefBody.textContent = clean
+    aiSpeak(clean)
+  }catch(e){
+    briefBody.textContent = 'Connection problem — please try again.'
+  }
+  briefPlay.classList.remove('busy'); briefPlay.textContent='▶'
+  briefBusy = false
+}
+if(briefPlay) briefPlay.onclick = playBrief
 
 /* ---------- AUTH GATE ---------- */
 async function loadStoreMeta(id){
