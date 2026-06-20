@@ -117,9 +117,22 @@
   .nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:460px;
     background:linear-gradient(0deg,var(--bg) 78%,transparent);padding:12px 26px max(16px,env(safe-area-inset-bottom));
     display:flex;justify-content:space-around;z-index:50;}
-  .nav a{display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--muted2);font-size:11px;font-weight:600;letter-spacing:.3px;cursor:pointer;}
+  .nav a{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--muted2);font-size:11px;font-weight:600;letter-spacing:.3px;cursor:pointer;}
   .nav a.active{color:var(--gold);}
   .nav a svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.7;}
+  .nav-dot{position:absolute;top:-3px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--down);box-shadow:0 0 0 2px var(--bg);}
+  .nav-dot[hidden]{display:none;}
+
+  /* ===== Stock ===== */
+  .stock-alert{display:flex;align-items:center;gap:8px;background:rgba(224,138,107,.12);border:1px solid rgba(224,138,107,.45);color:#f0b39f;border-radius:14px;padding:12px 14px;font-size:13.5px;font-weight:600;margin-bottom:14px;}
+  .stk-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:9px;}
+  .stk-row.low{border-color:rgba(224,138,107,.55);background:rgba(224,138,107,.06);}
+  .stk-name{font-weight:600;font-size:15px;color:var(--cream);}
+  .stk-sub{color:var(--muted);font-size:12px;margin-top:2px;}
+  .stk-right{text-align:right;flex:none;}
+  .stk-qty{font-family:'Fraunces',serif;font-size:19px;color:var(--cream);}
+  .stk-qty.low{color:var(--down);}
+  .stk-pill{display:inline-block;margin-top:3px;font-size:10px;font-weight:700;letter-spacing:.6px;color:#fff;background:var(--down);border-radius:999px;padding:2px 9px;text-transform:uppercase;}
 
   .rise{opacity:0;transform:translateY(14px);animation:rise .55s cubic-bezier(.2,.7,.3,1) forwards;}
   @keyframes rise{to{opacity:1;transform:none;}}
@@ -249,6 +262,12 @@
       </div>
     </div>
   </div>
+
+  <div class="view" id="view-stock">
+    <div class="h1">Your <em>stock</em></div>
+    <div class="subtitle">Live ingredient levels · updates with every sale</div>
+    <div id="stockContent"><div class="loading">Loading stock…</div></div>
+  </div>
 </div>
 
 <div class="cart" id="cart">
@@ -268,6 +287,7 @@
   <a data-view="home" class="active"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</a>
   <a data-view="pos"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>POS</a>
   <a data-view="advisor"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>Advisor</a>
+  <a data-view="stock"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg>Stock<span class="nav-dot" id="stockDot" hidden></span></a>
 </nav>
 
 <script type="module">
@@ -512,12 +532,14 @@ confirmBtn.onclick=async()=>{
   renderCart()
   toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),2000)
   load()
+  loadStock()
 }
 
 /* nav */
 function switchView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active', el.id==='view-'+v))
   document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active', a.dataset.view===v))
+  if(v==='stock') loadStock()
   syncCart()
   window.scrollTo(0,0)
 }
@@ -665,6 +687,50 @@ async function playBrief(){
 }
 if(briefPlay) briefPlay.onclick = playBrief
 
+/* ---------- STOCK (inventory view + low alerts) ---------- */
+const stockContent = document.getElementById('stockContent')
+const stockDot = document.getElementById('stockDot')
+async function loadStock(){
+  try{
+    const { data, error } = await supabase
+      .from('ingredients')
+      .select('name, unit, stock, low_threshold')
+      .eq('restaurant_id', RESTAURANT_ID)
+      .order('name', { ascending:true })
+    if(error) throw error
+    renderStock(data || [])
+  }catch(err){
+    if(stockContent) stockContent.innerHTML = '<div class="err">'+JSON.stringify(err,null,2)+'</div>'
+  }
+}
+function renderStock(rows){
+  const low = rows.filter(r => Number(r.stock) <= Number(r.low_threshold))
+  if(stockDot) stockDot.hidden = low.length === 0
+  if(!stockContent) return
+  if(rows.length === 0){
+    stockContent.innerHTML = '<div class="empty" style="text-align:center;padding:34px 0;opacity:.6">No ingredients yet. Add them to start tracking stock.</div>'
+    return
+  }
+  let html = ''
+  if(low.length){
+    html += `<div class="stock-alert">⚠️ ${low.length} item${low.length===1?'':'s'} running low — time to reorder</div>`
+  }
+  html += rows.map(r=>{
+    const isLow = Number(r.stock) <= Number(r.low_threshold)
+    return `<div class="stk-row${isLow?' low':''}">
+      <div>
+        <div class="stk-name">${r.name}</div>
+        <div class="stk-sub">reorder at ${fmt(r.low_threshold)} ${r.unit}</div>
+      </div>
+      <div class="stk-right">
+        <div class="stk-qty${isLow?' low':''}">${fmt(r.stock)} ${r.unit}</div>
+        ${isLow?'<div class="stk-pill">Low</div>':''}
+      </div>
+    </div>`
+  }).join('')
+  stockContent.innerHTML = html
+}
+
 /* ---------- AUTH GATE ---------- */
 async function loadStoreMeta(id){
   const { data, error } = await supabase.from('tenants').select('name, currency').eq('id', id).maybeSingle()
@@ -678,7 +744,7 @@ const agErr=document.getElementById('agErr')
 const agEmail=document.getElementById('agEmail')
 const agPass=document.getElementById('agPass')
 let _booted=false
-function boot(){ if(_booted)return; _booted=true; renderCart(); loadMenu(); load() }
+function boot(){ if(_booted)return; _booted=true; renderCart(); loadMenu(); load(); loadStock() }
 function agShowLogin(msg){ agGate.classList.remove('hidden'); agSignout.hidden=true; agErr.textContent=msg||'' }
 function agShowApp(){ agGate.classList.add('hidden'); agSignout.hidden=false; boot() }
 async function agCheck(){
